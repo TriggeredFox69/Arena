@@ -1,0 +1,251 @@
+<section class="section-view" id="section-marketplace">
+  <div class="market-terminal">
+
+    <!-- Top Market Data Bar -->
+    <div class="market-terminal-header">
+      <div class="market-hero">
+        <div class="market-badge">AX/PKR · Spot</div>
+        <div class="market-price-row">
+          <div class="market-price" id="marketAsk">—</div>
+          <span class="market-price-label">Best Ask</span>
+        </div>
+        <div class="market-sub-stats">
+          <div class="sub-stat"><span>Best Bid</span><strong id="marketBid">—</strong></div>
+          <div class="sub-stat"><span>Spread</span><strong id="marketSpread">—</strong></div>
+          <div class="sub-stat"><span>24H High</span><strong>₨10.0</strong></div>
+          <div class="sub-stat"><span>24H Low</span><strong>₨9.4</strong></div>
+          <div class="sub-stat"><span>24H Vol</span><strong>1.82M AX</strong></div>
+        </div>
+      </div>
+      <div class="market-controls">
+        <button class="btn sm" onclick="openTradeModal()">Quick Order</button>
+        <div class="market-toggle">
+          <button class="market-toggle-btn active" id="marketSellTab" onclick="switchMarketView('sell')">Sell</button>
+          <button class="market-toggle-btn" id="marketBuyTab" onclick="switchMarketView('buy')">Buy</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scrolling Ticker -->
+    <div class="market-ticker-wrapper">
+      <div class="market-ticker-track" id="marketTickerTrack"></div>
+    </div>
+
+    <!-- Main Exchange Grid -->
+    <div class="market-terminal-grid">
+
+      <!-- Left Column: Chart + Filters -->
+      <div class="market-column-main">
+        <div class="market-panel chart-panel">
+          <div class="panel-header">
+            <h3>Price Overview</h3>
+            <span class="pill-sm">Demo Chart</span>
+          </div>
+          <div class="market-chart-visual">
+            <svg viewBox="0 0 100 40" preserveAspectRatio="none" class="sparkline">
+              <defs>
+                <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="var(--gold)" stop-opacity="0.15" />
+                  <stop offset="100%" stop-color="var(--gold)" stop-opacity="0" />
+                </linearGradient>
+              </defs>
+              <path d="M0,30 L10,25 L20,28 L30,20 L40,26 L50,16 L60,22 L70,14 L80,18 L90,8 L100,12 L100,40 L0,40 Z"
+                    fill="url(#chartFill)" stroke="none" />
+              <path d="M0,30 L10,25 L20,28 L30,20 L40,26 L50,16 L60,22 L70,14 L80,18 L90,8 L100,12"
+                    fill="none" stroke="var(--gold)" stroke-width="1.5" vector-effect="non-scaling-stroke" />
+            </svg>
+            <div class="chart-y-axis">
+              <span>₨10.0</span>
+              <span>₨9.7</span>
+              <span>₨9.4</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="market-panel filters-panel">
+          <div class="panel-header">
+            <h3>Payment Routes</h3>
+            <span class="pill-sm">Active Filters</span>
+          </div>
+          <div class="filter-groups">
+            <div class="filter-group" id="sellPakistanFilters">
+              <div class="filter-label">Local</div>
+              <button class="market-chip active" onclick="toggleMarketFilter(this)">JazzCash</button>
+              <button class="market-chip active" onclick="toggleMarketFilter(this)">Easypaisa</button>
+              <button class="market-chip" onclick="toggleMarketFilter(this)">NayaPay</button>
+              <button class="market-chip" onclick="toggleMarketFilter(this)">SadaPay</button>
+              <button class="market-chip" onclick="toggleMarketFilter(this)">Raast</button>
+              <button class="market-chip" onclick="toggleMarketFilter(this)">IBFT</button>
+              <button class="market-chip" onclick="toggleMarketFilter(this)">HBL</button>
+              <button class="market-chip" onclick="toggleMarketFilter(this)">UBL</button>
+              <button class="market-chip" onclick="toggleMarketFilter(this)">Meezan</button>
+              <button class="market-chip" onclick="toggleMarketFilter(this)">Allied</button>
+              <button class="market-chip" onclick="toggleMarketFilter(this)">Bank Alfalah</button>
+            </div>
+            <div class="filter-group" id="sellInternationalFilters">
+              <div class="filter-label">International</div>
+              <button class="market-chip active" onclick="toggleMarketFilter(this)">PayPal</button>
+              <button class="market-chip active" onclick="toggleMarketFilter(this)">Stripe</button>
+              <button class="market-chip" onclick="toggleMarketFilter(this)">Wire</button>
+              <button class="market-chip" onclick="toggleMarketFilter(this)">Card</button>
+            </div>
+            <div class="filter-group" id="sellCryptoFilters">
+              <div class="filter-label">Crypto</div>
+              <button class="market-chip active" onclick="toggleMarketFilter(this)">TRON / TRC20</button>
+              <button class="market-chip" onclick="toggleMarketFilter(this)">USDT</button>
+              <button class="market-chip" onclick="toggleMarketFilter(this)">Instant</button>
+            </div>
+            <div class="filter-group" id="sellPriorityFilters">
+              <div class="filter-label">Sort Priority</div>
+              <button class="market-chip active" onclick="selectPriority(this, 'sell')">Lowest Price</button>
+              <button class="market-chip" onclick="selectPriority(this, 'sell')">Highest Price</button>
+              <button class="market-chip" onclick="selectPriority(this, 'sell')">Recently Listed</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Order Entry + Order Book -->
+      <div class="market-column-side">
+
+        <!-- Trade Ticket (Sell) -->
+        <div class="market-panel trade-panel market-view active" id="marketSellView">
+          <div class="panel-header">
+            <h3>Sell AX</h3>
+            <span class="pill-sm danger">Market & Limit</span>
+          </div>
+          <div class="trade-inputs">
+            <div class="input-group">
+              <label>Amount</label>
+              <input class="input" id="sellAmountInput" type="number" min="1" placeholder="0.00">
+            </div>
+            <div class="input-group">
+              <label>Price (PKR)</label>
+              <input class="input" id="sellPriceInput" type="number" min="1" step="0.1" placeholder="0.00">
+            </div>
+            <div class="input-group full-width">
+              <label>Payment Route</label>
+              <select class="input" id="sellPaymentType">
+                <option>JazzCash</option>
+                <option>Easypaisa</option>
+                <option>NayaPay</option>
+                <option>SadaPay</option>
+                <option>Raast</option>
+                <option>Bank Transfer / IBFT</option>
+                <option>PayPal</option>
+                <option>Stripe</option>
+                <option>TRON / TRC20</option>
+              </select>
+            </div>
+            <div class="input-group full-width">
+              <label>Min Order Limit</label>
+              <input class="input" id="sellMinLimitInput" type="number" min="1" placeholder="25">
+            </div>
+          </div>
+          <div class="trade-stats">
+            <div class="stat-row">
+              <span>Suggested Rate</span>
+              <strong id="sellSuggestedRate">₨9.8</strong>
+            </div>
+            <div class="stat-row">
+              <span>Min Size</span>
+              <strong>25 AX</strong>
+            </div>
+            <div class="stat-row">
+              <span>Preferred</span>
+              <strong>JazzCash</strong>
+            </div>
+          </div>
+          <div class="trade-actions">
+            <button class="btn danger full" onclick="createMarketplaceOffer('sell')">Create Sell Offer</button>
+            <button class="btn secondary full" onclick="openTradeModal()">Advanced</button>
+          </div>
+        </div>
+
+        <!-- Trade Ticket (Buy) -->
+        <div class="market-panel trade-panel market-view" id="marketBuyView">
+          <div class="panel-header">
+            <h3>Buy AX</h3>
+            <span class="pill-sm success">Market & Limit</span>
+          </div>
+          <div class="trade-inputs">
+            <div class="input-group">
+              <label>Amount</label>
+              <input class="input" id="buyAmountInput" type="number" min="1" placeholder="0.00">
+            </div>
+            <div class="input-group">
+              <label>Price (PKR)</label>
+              <input class="input" id="buyPriceInput" type="number" min="1" step="0.1" placeholder="0.00">
+            </div>
+            <div class="input-group full-width">
+              <label>Payment Route</label>
+              <select class="input" id="buyPaymentType">
+                <option>JazzCash</option>
+                <option>Easypaisa</option>
+                <option>NayaPay</option>
+                <option>SadaPay</option>
+                <option>Raast</option>
+                <option>Bank Transfer / IBFT</option>
+                <option>PayPal</option>
+                <option>Stripe</option>
+                <option>TRON / TRC20</option>
+              </select>
+            </div>
+            <div class="input-group full-width">
+              <label>Min Seller Limit</label>
+              <input class="input" id="buyMinLimitInput" type="number" min="1" placeholder="50">
+            </div>
+          </div>
+          <div class="trade-stats">
+            <div class="stat-row">
+              <span>Target Rate</span>
+              <strong id="buySuggestedRate">₨9.5</strong>
+            </div>
+            <div class="stat-row">
+              <span>Min Fill</span>
+              <strong>50 AX</strong>
+            </div>
+            <div class="stat-row">
+              <span>Preferred</span>
+              <strong>TRON</strong>
+            </div>
+          </div>
+          <div class="trade-actions">
+            <button class="btn success full" onclick="createMarketplaceOffer('buy')">Create Buy Request</button>
+            <button class="btn secondary full" onclick="openTradeModal()">Advanced</button>
+          </div>
+        </div>
+
+        <!-- Order Book -->
+        <div class="market-panel book-panel">
+          <div class="panel-header">
+            <h3>Order Book</h3>
+            <span class="pill-sm">Depth</span>
+          </div>
+          <div class="book-headers">
+            <div>Asks (Sell)</div>
+            <div>Bids (Buy)</div>
+          </div>
+          <div class="book-lists">
+            <div class="book-list sell" id="sellOrders"></div>
+            <div class="book-list buy" id="buyOrders"></div>
+          </div>
+          <div class="spread-band">
+            <span>Spread: <strong id="marketSpread">—</strong></span>
+          </div>
+          <div class="book-matched">
+            <div class="matched-list">
+              <div class="matched-label">Matched Buyer Demand</div>
+              <div class="market-list compact" id="sellSideBuyOrders"></div>
+            </div>
+            <div class="matched-list">
+              <div class="matched-label">Matched Seller Supply</div>
+              <div class="market-list compact" id="buySideSellOrders"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
