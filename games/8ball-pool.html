@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>8 Ball Pool - ArenaX</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/pool.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="game-container">
+        <!-- Header -->
+        <header class="game-header">
+            <div class="header-left">
+                <a href="../index.html" class="back-btn">← Back</a>
+                <div class="logo">
+                    <span class="logo-text">ARENA</span><span class="logo-accent">X</span>
+                </div>
+            </div>
+            <div class="header-center">
+                <h1>8 Ball Pool</h1>
+            </div>
+            <div class="header-right">
+                <button class="control-btn" id="poolSoundBtn" type="button" title="Toggle sound" style="margin-right:12px;min-width:auto;padding:10px 14px;">🔊</button>
+                <div class="balance-container">
+                    <span class="balance-label">Balance:</span>
+                    <span class="balance-display">0</span>
+                    <span class="coin-icon">🪙</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Game Mode Selection -->
+        <div id="modeSelection" class="mode-selection">
+            <div class="mode-card">
+                <h2>Choose Game Mode</h2>
+                <div class="difficulty-toolbar">
+                    <div class="difficulty-toolbar-label">AI Difficulty</div>
+                    <div class="difficulty-pills" id="difficultyPills">
+                        <button type="button" class="difficulty-pill" data-difficulty="easy">Easy</button>
+                        <button type="button" class="difficulty-pill active" data-difficulty="medium">Medium</button>
+                        <button type="button" class="difficulty-pill" data-difficulty="hard">Hard</button>
+                    </div>
+                    <select id="aiDifficulty" class="difficulty-select">
+                        <option value="easy">Easy</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="hard">Hard</option>
+                    </select>
+                </div>
+                <div class="mode-buttons">
+                    <button class="mode-btn" type="button" data-mode="ai">
+                        <div class="mode-icon">🤖</div>
+                        <h3>Play vs AI</h3>
+                        <p>Challenge our intelligent bot with the selected difficulty.</p>
+                    </button>
+                    <button class="mode-btn" type="button" data-mode="player">
+                        <div class="mode-icon">👥</div>
+                        <h3>2 Player Local</h3>
+                        <p>Play with a friend locally</p>
+                    </button>
+                </div>
+                <div style="margin-top:24px;text-align:center;color:#b7ad97;font-size:14px;">
+                    Choose a mode card to start the table.
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Board -->
+        <div id="gameBoard" class="game-board hidden">
+            <!-- Player Info -->
+            <div class="players-info">
+                <div class="player-card active" id="player1Card">
+                    <div class="player-avatar">P1</div>
+                    <div class="player-details">
+                        <h3 id="player1Name">Player 1</h3>
+                        <div class="player-type" id="player1Type">Yet to decide</div>
+                        <div class="player-balls" id="player1Balls"></div>
+                    </div>
+                    <div class="turn-indicator">Your Turn</div>
+                    <div class="player-timer" id="player1Timer">30s</div>
+                </div>
+                <div class="vs-divider">VS</div>
+                <div class="player-card" id="player2Card">
+                    <div class="player-avatar">P2</div>
+                    <div class="player-details">
+                        <h3 id="player2Name">Player 2</h3>
+                        <div class="player-type" id="player2Type">Yet to decide</div>
+                        <div class="player-balls" id="player2Balls"></div>
+                    </div>
+                    <div class="turn-indicator">Waiting...</div>
+                    <div class="player-timer player-timer-right" id="player2Timer">30s</div>
+                </div>
+            </div>
+
+            <!-- Canvas Container: [Spin+Your Balls] [Table] [Power+Opponent Balls] -->
+            <div class="canvas-container">
+                <!-- Left panel: your pocketed balls -->
+                <div class="side-panel" id="player1SidePanel">
+                    <!-- Player 1's pocketed balls -->
+                    <div class="pocketed-side" id="player1PocketedSide">
+                        <div class="pocketed-title">Your Balls</div>
+                        <div class="pocketed-tube" id="player1Tube"></div>
+                    </div>
+                </div>
+
+                <!-- Table area (canvas + overlays) -->
+                <div class="table-wrap">
+                    <canvas id="poolCanvas"></canvas>
+
+                    <!-- Game Messages -->
+                    <div class="game-message" id="gameMessage"></div>
+                </div>
+
+                <!-- Right panel: power widget + opponent's pocketed balls -->
+                <div class="side-panel" id="player2SidePanel">
+                    <!-- Power Widget (top-right, out of the table) -->
+                    <div class="power-bar-container" id="powerBarContainer">
+                        <div class="power-bar-label">Shot Power</div>
+                        <div class="power-bar">
+                            <div class="power-fill" id="powerFill"></div>
+                        </div>
+                        <div class="power-percentage" id="powerPercentage">0%</div>
+                    </div>
+
+                    <!-- Player 2's pocketed balls -->
+                    <div class="pocketed-side" id="player2PocketedSide">
+                        <div class="pocketed-title">Opponent Balls</div>
+                        <div class="pocketed-tube" id="player2Tube"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="game-controls">
+                <button class="control-btn" id="resetBtn">
+                    <span>🔄</span>
+                    <span>New Game</span>
+                </button>
+                <button class="control-btn" id="quitBtn">
+                    <span>🚪</span>
+                    <span>Quit</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Game Over Modal -->
+        <div id="gameOverModal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-icon" id="modalIcon">🏆</div>
+                <h2 id="modalTitle">Game Over</h2>
+                <p id="modalMessage"></p>
+                <div class="modal-stats" id="modalStats"></div>
+                <div class="modal-buttons">
+                    <button class="btn btn-primary" id="playAgainBtn">Play Again</button>
+                    <button class="btn btn-outline" id="backToMenuBtn">Main Menu</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rotate Device Overlay (mobile portrait) -->
+        <div id="rotateOverlay" class="rotate-overlay">
+            <div class="rotate-icon">📱</div>
+            <h2>Rotate Your Device</h2>
+            <p>This game is best played in landscape mode.<br>Please rotate your phone for the full experience.</p>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="pool-game.js"></script>
+</body>
+</html>

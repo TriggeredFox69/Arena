@@ -1,0 +1,576 @@
+/* ==========================================
+   ArenaX - Premium Gaming Platform
+   Colors: Black, White, Gold
+   ========================================== */
+
+:root {
+    --black: #0a0a0a;
+    --dark: #1a1a1a;
+    --darker: #0d0d0d;
+    --white: #ffffff;
+    --off-white: #f5f5f5;
+    --gray: #808080;
+    --light-gray: #b8b8b8;
+    --gold: #d4af37;
+    --gold-light: #f4d03f;
+    --gold-dark: #b8941e;
+
+    --font-display: 'Orbitron', sans-serif;
+    --font-body: 'Inter', sans-serif;
+
+    --transition: all 0.3s ease;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-body);
+    background-color: var(--black);
+    color: var(--white);
+    line-height: 1.6;
+    overflow-x: hidden;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* ========== Typography ========== */
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.gold {
+    color: var(--gold);
+}
+
+/* ========== Navigation ========== */
+.navbar {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    background: rgba(10, 10, 10, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--gold);
+    z-index: 1000;
+    padding: 15px 0;
+}
+
+.nav-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: 2px;
+}
+
+.logo-text {
+    color: var(--white);
+}
+
+.logo-accent {
+    color: var(--gold);
+}
+
+.nav-menu {
+    display: flex;
+    list-style: none;
+    gap: 30px;
+}
+
+.nav-menu a {
+    color: var(--white);
+    text-decoration: none;
+    font-weight: 500;
+    transition: var(--transition);
+    position: relative;
+}
+
+.nav-menu a:hover,
+.nav-menu a.active {
+    color: var(--gold);
+}
+
+.nav-menu a::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--gold);
+    transition: width 0.3s;
+}
+
+.nav-menu a:hover::after,
+.nav-menu a.active::after {
+    width: 100%;
+}
+
+.nav-buttons {
+    display: flex;
+    gap: 15px;
+}
+
+/* ========== Buttons ========== */
+.btn {
+    display: inline-block;
+    padding: 12px 28px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    transition: var(--transition);
+    cursor: pointer;
+    border: 2px solid transparent;
+    text-align: center;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--gold), var(--gold-light));
+    color: var(--black);
+    border-color: var(--gold);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(212, 175, 55, 0.4);
+}
+
+.btn-outline {
+    background: transparent;
+    color: var(--gold);
+    border-color: var(--gold);
+}
+
+.btn-outline:hover {
+    background: var(--gold);
+    color: var(--black);
+}
+
+.btn-large {
+    padding: 16px 36px;
+    font-size: 16px;
+}
+
+.btn-block {
+    width: 100%;
+    display: block;
+}
+
+/* ========== Hero Section ========== */
+.hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    background: linear-gradient(135deg, var(--black) 0%, var(--dark) 100%);
+    position: relative;
+    padding-top: 80px;
+}
+
+.hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at 20% 50%, rgba(212, 175, 55, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 50%, rgba(212, 175, 55, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 60px 0;
+}
+
+.hero-title {
+    font-size: 64px;
+    margin-bottom: 24px;
+    text-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+}
+
+.hero-subtitle {
+    font-size: 20px;
+    color: var(--light-gray);
+    max-width: 700px;
+    margin: 0 auto 40px;
+    font-weight: 300;
+}
+
+.hero-buttons {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin-bottom: 60px;
+}
+
+.hero-stats {
+    display: flex;
+    gap: 60px;
+    justify-content: center;
+    margin-top: 60px;
+}
+
+.stat {
+    text-align: center;
+}
+
+.stat-number {
+    font-family: var(--font-display);
+    font-size: 36px;
+    font-weight: 900;
+    color: var(--gold);
+    margin-bottom: 8px;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: var(--light-gray);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* ========== Sections ========== */
+.section {
+    padding: 100px 0;
+}
+
+.bg-dark {
+    background: var(--dark);
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 60px;
+}
+
+.section-title {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.section-subtitle {
+    font-size: 18px;
+    color: var(--light-gray);
+}
+
+/* ========== Steps Grid ========== */
+.steps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 30px;
+}
+
+.step-card {
+    background: var(--black);
+    border: 2px solid var(--gold);
+    border-radius: 12px;
+    padding: 40px 30px;
+    text-align: center;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.step-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.1), transparent);
+    transition: left 0.6s;
+}
+
+.step-card:hover::before {
+    left: 100%;
+}
+
+.step-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 40px rgba(212, 175, 55, 0.3);
+}
+
+.step-number {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-family: var(--font-display);
+    font-size: 48px;
+    font-weight: 900;
+    color: var(--gold);
+    opacity: 0.2;
+}
+
+.step-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+}
+
+.step-card h3 {
+    font-size: 24px;
+    margin-bottom: 12px;
+    color: var(--white);
+}
+
+.step-card p {
+    color: var(--light-gray);
+    font-size: 15px;
+}
+
+/* ========== Games Grid ========== */
+.games-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 30px;
+}
+
+.game-card {
+    background: var(--dark);
+    border: 2px solid transparent;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: var(--transition);
+}
+
+.game-card:hover {
+    border-color: var(--gold);
+    transform: translateY(-10px);
+    box-shadow: 0 20px 50px rgba(212, 175, 55, 0.3);
+}
+
+.game-header {
+    background: linear-gradient(135deg, var(--darker), var(--dark));
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.game-icon {
+    font-size: 80px;
+}
+
+.game-body {
+    padding: 30px;
+}
+
+.game-body h3 {
+    font-size: 24px;
+    margin-bottom: 12px;
+    color: var(--gold);
+}
+
+.game-body p {
+    color: var(--light-gray);
+    margin-bottom: 20px;
+    font-size: 15px;
+}
+
+.game-info {
+    background: var(--black);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.info-item:last-child {
+    margin-bottom: 0;
+}
+
+.info-item .label {
+    color: var(--light-gray);
+    font-size: 14px;
+}
+
+.info-item .value {
+    font-weight: 600;
+    color: var(--white);
+}
+
+.game-footer {
+    padding: 0 30px 30px;
+}
+
+/* ========== Rewards Grid ========== */
+.rewards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 30px;
+}
+
+.reward-card {
+    background: var(--black);
+    border: 2px solid var(--gray);
+    border-radius: 12px;
+    padding: 40px 30px;
+    text-align: center;
+    transition: var(--transition);
+}
+
+.reward-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 40px rgba(212, 175, 55, 0.2);
+}
+
+.reward-card.featured {
+    border-color: var(--gold);
+    background: linear-gradient(135deg, var(--darker), var(--black));
+}
+
+.reward-badge {
+    font-size: 64px;
+    margin-bottom: 20px;
+}
+
+.reward-card h3 {
+    font-size: 24px;
+    margin-bottom: 12px;
+}
+
+.reward-amount {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--gold);
+    margin-bottom: 20px;
+}
+
+.reward-features {
+    list-style: none;
+    text-align: left;
+}
+
+.reward-features li {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--dark);
+    color: var(--light-gray);
+}
+
+.reward-features li:last-child {
+    border-bottom: none;
+}
+
+/* ========== CTA Section ========== */
+.cta-section {
+    padding: 100px 0;
+    background: linear-gradient(135deg, var(--black), var(--dark));
+    text-align: center;
+}
+
+.cta-content h2 {
+    font-size: 48px;
+    margin-bottom: 20px;
+}
+
+.cta-content p {
+    font-size: 20px;
+    color: var(--light-gray);
+    margin-bottom: 40px;
+}
+
+/* ========== Footer ========== */
+.footer {
+    background: var(--black);
+    border-top: 2px solid var(--gold);
+    padding: 60px 0 30px;
+}
+
+.footer-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 40px;
+    margin-bottom: 40px;
+}
+
+.footer-section h4 {
+    color: var(--gold);
+    margin-bottom: 20px;
+    font-size: 18px;
+}
+
+.footer-section ul {
+    list-style: none;
+}
+
+.footer-section ul li {
+    margin-bottom: 10px;
+}
+
+.footer-section a {
+    color: var(--light-gray);
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.footer-section a:hover {
+    color: var(--gold);
+}
+
+.footer-section p {
+    color: var(--light-gray);
+    font-size: 15px;
+}
+
+.footer-bottom {
+    text-align: center;
+    padding-top: 30px;
+    border-top: 1px solid var(--dark);
+    color: var(--gray);
+    font-size: 14px;
+}
+
+/* ========== Responsive ========== */
+@media (max-width: 768px) {
+    .nav-menu {
+        display: none;
+    }
+
+    .hero-title {
+        font-size: 40px;
+    }
+
+    .hero-subtitle {
+        font-size: 16px;
+    }
+
+    .hero-buttons {
+        flex-direction: column;
+    }
+
+    .hero-stats {
+        flex-direction: column;
+        gap: 30px;
+    }
+
+    .section-title {
+        font-size: 36px;
+    }
+
+    .steps-grid,
+    .games-grid,
+    .rewards-grid {
+        grid-template-columns: 1fr;
+    }
+}

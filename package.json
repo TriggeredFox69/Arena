@@ -1,0 +1,25 @@
+{
+  "name": "arenax-netlify",
+  "version": "1.0.0",
+  "description": "ArenaX frontend and serverless backend for Netlify + Supabase",
+  "scripts": {
+    "dev": "netlify dev",
+    "build": "echo 'Static build: no build step required'"
+  },
+  "dependencies": {
+    "@netlify/functions": "^2.8.1",
+    "@supabase/supabase-js": "^2.45.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.3.1",
+    "express-validator": "^7.1.0",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "serverless-http": "^3.2.0"
+  },
+  "devDependencies": {
+    "netlify-cli": "^17.33.4"
+  }
+}

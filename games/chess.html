@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chess Royale - ArenaX</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #050505;
+      --panel: rgba(16,16,20,.9);
+      --panel-2: rgba(22,22,28,.96);
+      --line: rgba(255,225,150,.12);
+      --line-strong: rgba(255,225,150,.26);
+      --gold: #d8a43b;
+      --gold-light: #ffe7a6;
+      --gold-gradient: linear-gradient(135deg,#fff2b8 0%,#d8a43b 45%,#8b6118 100%);
+      --text: #faf5ea;
+      --muted: #b7ab95;
+      --success: #53dc93;
+      --danger: #f25c5c;
+      --dark-square: #7f9f59;
+      --light-square: #eeeed2;
+      --highlight: rgba(113,168,255,.35);
+      --capture: rgba(242,92,92,.35);
+      --last-move: rgba(255,231,166,.24);
+      --shadow: 0 30px 90px rgba(0,0,0,.62);
+      --font-display: "Orbitron", sans-serif;
+      --font-body: "Inter", sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      background: radial-gradient(circle at top left, rgba(216,164,59,.10), transparent 26%), radial-gradient(circle at bottom right, rgba(120,89,28,.16), transparent 24%), #050505;
+      color: var(--text);
+      font-family: var(--font-body);
+      padding: 8px;
+      overflow: hidden;
+    }
+
+    .page {
+      width: min(1500px, 100%);
+      height: calc(100vh - 16px);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow);
+      border-radius: 28px;
+    }
+
+    .game-panel { padding: 14px; }
+    .sidebar { padding: 14px; overflow: auto; max-height: calc(100vh - 16px); }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 22px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .brand h1 {
+      font-family: var(--font-display);
+      font-size: 24px;
+      letter-spacing: -.03em;
+    }
+    .brand h1 span { color: var(--gold-light); }
+    .brand p { color: var(--muted); font-size: 13px; margin-top: 4px; }
+
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn {
+      border: none;
+      border-radius: 999px;
+      padding: 11px 16px;
+      background: var(--gold-gradient);
+      color: #140d04;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .btn.secondary {
+      background: rgba(255,255,255,.05);
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    .layout {
+      display: block;
+    }
+
+    .board-wrap {
+      position: relative;
+      border-radius: 28px;
+      padding: 14px;
+      background:
+        linear-gradient(145deg, rgba(255,231,166,.08), rgba(255,255,255,.02)),
+        linear-gradient(180deg, rgba(65,48,22,.72), rgba(18,18,22,.98));
+      border: 1px solid var(--line-strong);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 24px 60px rgba(0,0,0,.35);
+    }
+
+    .board-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .status-pill {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-weight: 800;
+      color: var(--gold-light);
+    }
+
+    .board-shell {
+      position: relative;
+      width: min(68vh, 760px);
+      aspect-ratio: 1 / 1;
+      margin: 0 auto;
+      padding: 8px;
+      border-radius: 18px;
+      background: linear-gradient(145deg, #4d4d49, #2f2f2d 60%, #6a6a64);
+      box-shadow: inset 0 1px 3px rgba(255,255,255,.08), inset 0 -8px 14px rgba(0,0,0,.32), 0 18px 34px rgba(0,0,0,.28);
+    }
+
+    .coords {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      font-size: 12px;
+      font-weight: 800;
+      color: rgba(0,0,0,.5);
+    }
+
+    .board {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      grid-template-rows: repeat(8, 1fr);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 16px 34px rgba(0,0,0,.25);
+      border: 1px solid rgba(255,255,255,.08);
+      background: #556b2f;
+    }
+
+    .square {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform .12s ease, filter .12s ease, box-shadow .18s ease;
+      user-select: none;
+      z-index: 0;
+    }
+    .square::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(145deg, rgba(255,255,255,.04), transparent 45%, rgba(0,0,0,.05));
+      opacity: .28;
+    }
+    .square.light { background: var(--light-square); }
+    .square.dark { background: var(--dark-square); }
+    .square:hover { filter: brightness(1.05); }
+    .square.selected { box-shadow: inset 0 0 0 4px rgba(113,168,255,.68), inset 0 0 24px rgba(113,168,255,.22); }
+    .square.last-move { box-shadow: inset 0 0 0 999px var(--last-move), inset 0 0 18px rgba(255,231,166,.18); }
+    .square .marker {
+      width: 28%;
+      height: 28%;
+      border-radius: 50%;
+      background: var(--highlight);
+      box-shadow: 0 0 14px rgba(113,168,255,.45);
+    }
+    .square.capture .marker {
+      width: 74%;
+      height: 74%;
+      background: transparent;
+      border: 6px solid var(--capture);
+      box-shadow: none;
+    }
+
+    .piece {
+      position: relative;
+      z-index: 2;
+      transition: transform .15s ease, filter .18s ease;
+      pointer-events: none;
+      display: block;
+    }
+    .piece.white,
+    .piece.black {
+      color: transparent;
+      text-shadow: none;
+      -webkit-text-stroke: 0;
+      filter: none;
+      opacity: 1;
+    }
+
+    .info-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .card {
+      border-radius: 22px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+    }
+
+    .card h3 {
+      font-family: var(--font-display);
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    .card p, .card li, .card label {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .player-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.05);
+      margin-top: 10px;
+    }
+    .player-card.active { border-color: var(--line-strong); box-shadow: 0 0 0 1px rgba(255,225,150,.16); }
+    .player-card strong { display: block; font-size: 15px; }
+
+    select {
+      width: 100%;
+      padding: 12px 13px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      color: var(--text);
+      margin-top: 8px;
+    }
+    option { background: #111; }
+
+    .moves {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      max-height: 220px;
+      overflow: auto;
+      margin-top: 10px;
+    }
+    .move-item {
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(255,255,255,.03);
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 1100px) {
+      .page, .layout { grid-template-columns: 1fr; }
+      .board-shell { width: min(92vw, 720px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <main class="panel game-panel">
+      <div class="topbar">
+        <div class="brand">
+          <h1>Chess <span>Royale</span></h1>
+          <p>Premium ArenaX strategy board with local and AI play.</p>
+        </div>
+        <div class="actions">
+          <button class="btn secondary" onclick="window.location.href='../index.html'">🏠 Lobby</button>
+          <button class="btn secondary" id="chessSoundBtn" title="Toggle sound">🔊</button>
+          <button class="btn" id="newGameBtn">▶ Start Game</button>
+        </div>
+      </div>
+
+      <div class="layout">
+        <section class="board-wrap">
+          <div class="board-head" style="margin-bottom:14px;">
+            <div class="status-pill" id="statusText">White to move</div>
+          </div>
+          <div class="board-shell">
+            <div class="board" id="board"></div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <aside class="panel sidebar">
+      <div class="card">
+        <h3>How it plays</h3>
+        <p>Select a piece to see legal moves. Captures, checks, checkmate, stalemate, castling, en passant, and promotion are supported. AI strength scales by search quality and move scoring.</p>
+      </div>
+
+      <div class="card" style="margin-top:14px;">
+        <h3>Match Setup</h3>
+        <label for="modeSelect">Game Mode</label>
+        <select id="modeSelect">
+          <option value="ai">Play vs AI</option>
+          <option value="local">2 Player Local</option>
+        </select>
+        <label for="difficultySelect" style="display:block;margin-top:12px;">AI Difficulty</label>
+        <select id="difficultySelect">
+          <option value="easy">Easy</option>
+          <option value="medium" selected>Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+        <div class="status-pill" id="modeText" style="margin-top:14px;display:inline-flex;">Mode: vs AI</div>
+      </div>
+
+      <div class="card" style="margin-top:14px;">
+        <h3>Players</h3>
+        <div class="player-card active" id="whiteCard">
+          <div><strong>White</strong><p>Bottom side</p></div>
+          <div style="font-size:32px;">♔</div>
+        </div>
+        <div class="player-card" id="blackCard">
+          <div><strong>Black</strong><p>Top side</p></div>
+          <div style="font-size:32px;">♚</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px;">
+        <h3>Move Log</h3>
+        <div class="moves" id="moveLog"></div>
+      </div>
+    </aside>
+  </div>
+
+  <script src="chess.js"></script>
+</body>
+</html>
