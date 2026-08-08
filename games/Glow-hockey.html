@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Glow Hockey</title>
+    <script src="../js/app.js"></script>
+    <script src="../js/game-common.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -633,7 +635,8 @@
             const keys = {};
             window.addEventListener('keydown', (e) => {
                 keys[e.key.toLowerCase()] = true;
-                if (e.key === 'Escape') { ensureAudio(); togglePause(); }
+                // When GameCommon is active it owns Escape (pause/resume overlay)
+                if (e.key === 'Escape' && !window.gameCommon) { ensureAudio(); togglePause(); }
             });
             window.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
 
@@ -1412,6 +1415,7 @@
                 rawPointerBottom.active = false;
                 rawPointerTop.active = false;
                 startCountdown();
+                if (window.gameCommon && window.gameCommon.startGamePlay) window.gameCommon.startGamePlay();
             }
 
             function endGame() {
@@ -1419,6 +1423,11 @@
                 stopHum();
                 const playerWon = score.bottom > score.top;
                 const winner = playerWon ? (mode === 'ai' ? 'You' : 'Player 1') : (mode === 'ai' ? 'Computer' : 'Player 2');
+                if (window.gameCommon && window.gameCommon.started) {
+                    if (playerWon) sfxWin(); else sfxLose();
+                    window.gameCommon.showResult(playerWon, `Final score: <b>${score.bottom} - ${score.top}</b> — ${winner} wins.`);
+                    return;
+                }
                 document.getElementById('winnerText').textContent = `🏆 ${winner} Wins!`;
                 document.getElementById('finalScoreText').textContent = `Final Score: ${score.bottom} - ${score.top}`;
                 document.getElementById('gameOverOverlay').classList.remove('hidden');
@@ -1560,6 +1569,52 @@
             puck.vx = 0; puck.vy = 0;
             render();
             requestAnimationFrame(loop);
+
+            // Expose a small API for the ArenaX GameCommon integration
+            window.glowHockey = {
+                togglePause,
+                toggleMute,
+                isMuted: () => isMuted,
+                getState: () => state
+            };
+        })();
+    </script>
+    <script>
+        // === ArenaX GameCommon integration (wager, toolbar, timers, result) ===
+        (function () {
+            const gc = new GameCommon({
+                gameKey: 'Glow-hockey',
+                gameName: 'Glow Hockey',
+                turnTimeLimit: 0,
+                rulesHTML: `
+                  <h3>Objective</h3>
+                  <p>Score more goals than your opponent before the match ends. First to the goal limit wins the pot.</p>
+                  <h3>How to play</h3>
+                  <p>Drag your mallet (bottom half) to defend your goal and knock the puck into the opponent's net.</p>
+                  <h3>Wager</h3>
+                  <p>Winner takes the pot (wager × 2). Min 5 AX, max 1000 AX.</p>
+                `,
+                onPause: function () {
+                    const gh = window.glowHockey;
+                    if (gh && gh.getState() === 'playing') gh.togglePause();
+                },
+                onResume: function () {
+                    const gh = window.glowHockey;
+                    if (gh && gh.getState() === 'paused') gh.togglePause();
+                },
+                onExit: function () { window.location.href = '../index.html'; }
+            });
+            window.gameCommon = gc;
+
+            // Sync the game audio engine with the shared mute toggle
+            const baseToggle = gc.toggleSound.bind(gc);
+            gc.toggleSound = function () {
+                baseToggle();
+                const gh = window.glowHockey;
+                if (gh && gh.isMuted() !== !gc.isSoundOn()) gh.toggleMute();
+            };
+
+            gc.init();
         })();
     </script>
 </body>

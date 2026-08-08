@@ -62,19 +62,18 @@
             const password = document.getElementById('password').value;
 
             if (!email || !password) {
-                arenaX.showNotification('Please enter email and password', 'error');
+                api.showNotification('Please enter email and password', 'error');
                 return;
             }
 
-            const result = await arenaX.login(email, password);
+            const result = await api.login(email, password);
 
             if (result.success) {
-                arenaX.showNotification('Login successful!', 'success');
-                setTimeout(() => {
+                api.playAuthAnimation('login', 'Session Authenticated', 'Access granted! Loading ArenaX Dashboard...', function () {
                     window.location.href = 'index.html';
-                }, 1000);
+                });
             } else {
-                arenaX.showNotification(result.message, 'error');
+                api.showNotification(result.message, 'error');
             }
         });
     </script>

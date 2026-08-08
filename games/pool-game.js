@@ -1792,6 +1792,17 @@ class PoolGame {
 
     async endGame(winner) {
         this.gameOver = true;
+
+        // When GameCommon is active it handles payout + result screen
+        if (window.gameCommon && window.gameCommon.started) {
+            const won = winner === 1;
+            this.playPoolSound(won ? 'win' : 'lose');
+            window.gameCommon.showResult(won, won
+                ? 'You cleared the table — victory!'
+                : (this.gameMode === 'ai' ? 'The AI won this round.' : 'Player 2 wins the match.'));
+            return;
+        }
+
         const modal = document.getElementById('gameOverModal');
         const modalTitle = document.getElementById('modalTitle');
         const modalMessage = document.getElementById('modalMessage');
@@ -1952,7 +1963,13 @@ class PoolGame {
         this.aiDifficulty = difficulty;
 
         this.playPoolSound('ui');
-        if (arenaX.isLoggedIn()) {
+        if (window.gameCommon && window.gameCommon.getWager && window.gameCommon.getWager() > 0) {
+            // GameCommon already locked the wager before the mode screen opened —
+            // it owns the wallet transaction and the payout.
+            this.entryFee = window.gameCommon.getWager();
+            this.winAmount = this.entryFee * 2;
+            this.gameStartedWithBet = false;
+        } else if (arenaX.isLoggedIn()) {
             const result = await arenaX.startGame('8 Ball Pool');
             if (!result.success) {
                 arenaX.showNotification(result.message, 'error');
@@ -1968,6 +1985,7 @@ class PoolGame {
 
         this.gameStarted = true;
         this.startTurnTimer();
+        if (window.gameCommon && window.gameCommon.startGamePlay) window.gameCommon.startGamePlay();
 
         document.getElementById('modeSelection').classList.add('hidden');
         document.getElementById('gameBoard').classList.remove('hidden');

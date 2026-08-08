@@ -2,6 +2,7 @@ const { validationResult } = require('express-validator');
 const User = require('../models/User');
 const Transaction = require('../models/Transaction');
 const GameHistory = require('../models/GameHistory');
+const { recordActivity } = require('../utils/activity');
 
 const COIN_PRICE = parseInt(process.env.COIN_PRICE) || 10;
 const ENTRY_FEE = 1;
@@ -18,24 +19,27 @@ exports.startGame = async (req, res, next) => {
     }
 
     const { game } = req.body;
+    // Wager-based entry: 5–1000 AX when provided, legacy flat fee otherwise
+    const parsedWager = parseInt(req.body.wager, 10);
+    const entryFee = Number.isNaN(parsedWager) ? ENTRY_FEE : parsedWager;
 
     const user = await User.findById(req.user._id);
 
-    if (user.coins < ENTRY_FEE) {
+    if (user.coins < entryFee) {
       return res.status(400).json({
         success: false,
         message: 'Insufficient balance. Please deposit coins to play.'
       });
     }
 
-    user.coins -= ENTRY_FEE;
+    user.coins -= entryFee;
     await user.save();
 
     await Transaction.create([{
       user: user._id,
       type: 'debit',
-      amount: ENTRY_FEE,
-      rupees: ENTRY_FEE * COIN_PRICE,
+      amount: entryFee,
+      rupees: entryFee * COIN_PRICE,
       source: 'game_entry',
       method: 'game',
       game: game,
@@ -43,11 +47,18 @@ exports.startGame = async (req, res, next) => {
       balanceAfter: user.coins
     }]);
 
+    recordActivity(user.id, 'game_started', {
+      game,
+      entry_fee: entryFee,
+      balance_after: user.coins
+    });
+
     res.json({
       success: true,
       message: 'Game started successfully',
       balance: user.coins,
-      game: game
+      game: game,
+      wager: entryFee
     });
   } catch (error) {
     next(error);
@@ -66,6 +77,8 @@ exports.endGame = async (req, res, next) => {
     }
 
     const { game, won, coinsWon, gameData } = req.body;
+    const parsedWager = parseInt(req.body.wager, 10);
+    const entryFee = Number.isNaN(parsedWager) ? (Math.ceil((coinsWon || 0) / 2) || ENTRY_FEE) : parsedWager;
 
     const user = await User.findById(req.user._id);
     const balanceBefore = user.coins;
@@ -93,7 +106,7 @@ exports.endGame = async (req, res, next) => {
     await GameHistory.create([{
       user: user._id,
       game: game,
-      entryFee: ENTRY_FEE,
+      entryFee: entryFee,
       won: won,
       coinsWon: coinsWon,
       rupeesWon: coinsWon * COIN_PRICE,
@@ -101,6 +114,13 @@ exports.endGame = async (req, res, next) => {
       balanceAfter: user.coins,
       gameData: gameData || {}
     }]);
+
+    recordActivity(user.id, 'game_ended', {
+      game,
+      won,
+      coins_won: coinsWon,
+      balance_after: user.coins
+    });
 
     res.json({
       success: true,

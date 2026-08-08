@@ -169,6 +169,45 @@
     </div>
 
     <script src="../js/api.js"></script>
+    <script src="../js/app.js"></script>
+    <script src="../js/game-common.js"></script>
     <script src="pool-game.js"></script>
+    <script>
+        // === ArenaX GameCommon integration (wager, toolbar, timers, result) ===
+        document.addEventListener('DOMContentLoaded', () => {
+            const gc = new GameCommon({
+                gameKey: '8ball-pool',
+                gameName: '8 Ball Pool',
+                turnTimeLimit: 0,
+                rulesHTML: `
+                  <h3>Objective</h3>
+                  <p>Pot all of your balls (solids or stripes), then legally pot the black 8-ball to win.</p>
+                  <h3>How to play</h3>
+                  <p>Drag to aim the cue, hold to charge power, release to shoot. First ball potted decides your group.</p>
+                  <h3>Fouls</h3>
+                  <p>Scratching or hitting the wrong ball first gives your opponent ball-in-hand. Potting the 8-ball early loses the game.</p>
+                  <h3>Wager</h3>
+                  <p>Winner takes the pot (wager × 2). Min 5 AX, max 1000 AX.</p>
+                `,
+                onExit: function () { window.location.href = '../index.html'; }
+            });
+            window.gameCommon = gc;
+
+            // Keep pool's own sound engine in sync with the shared mute toggle
+            if (typeof game !== 'undefined' && game && game.soundOn === false) {
+                gc.soundOn = false;
+                gc.updateSoundButton();
+            }
+            const baseToggle = gc.toggleSound.bind(gc);
+            gc.toggleSound = function () {
+                baseToggle();
+                if (typeof game !== 'undefined' && game && game.soundOn !== gc.isSoundOn()) {
+                    game.toggleSound();
+                }
+            };
+
+            gc.init();
+        });
+    </script>
 </body>
 </html>

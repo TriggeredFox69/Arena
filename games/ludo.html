@@ -9,6 +9,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet" />
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="../js/app.js"></script>
+  <script src="../js/game-common.js"></script>
   <style>
     :root {
       --bg: #060608;
@@ -1391,6 +1393,7 @@
       renderPlayers();
       log(`<b>${config.redName}</b> vs <b>${config.yellowName}</b> — Red starts! ⚔️`);
       setTimeout(startTurn, 600);
+      if (window.gameCommon && window.gameCommon.startGamePlay) window.gameCommon.startGamePlay();
     }
 
     function gameOver(winner) {
@@ -1398,6 +1401,12 @@
       stopTimer();
       renderPlayers();
       const iWon = S.mode === 'ai' ? !winner.isAI : S.mode === 'online' ? winner.color === S.myColor : winner.color === 'red';
+      if (window.gameCommon && window.gameCommon.started) {
+        saveResult(winner);
+        if (iWon) confetti();
+        window.gameCommon.showResult(iWon, `<b>${esc(winner.name)}</b> wins the match.`);
+        return;
+      }
       $('goEmoji').textContent = iWon ? '🏆' : '💀';
       $('goTitle').textContent = iWon ? 'Victory!' : 'Defeat';
       $('goTitle').className = 'go-title ' + (iWon ? 'win' : '');
@@ -1614,6 +1623,26 @@
     buildDice();
     renderPlayers();
     log('<b>Welcome to Ludo Stars.</b> Pick a mode to start playing.');
+  </script>
+  <script>
+    // === ArenaX GameCommon integration (wager, toolbar, timers, result) ===
+    window.gameCommon = new GameCommon({
+      gameKey: 'ludo',
+      gameName: 'Ludo Stars',
+      turnTimeLimit: 30,
+      rulesHTML: `
+        <h3>Objective</h3>
+        <p>Move all 4 of your tokens from base around the board and into the home triangle before your opponent.</p>
+        <h3>How to play</h3>
+        <p>Tap the dice to roll. Roll a 6 to bring a token out of base. Tap a glowing token to move it.</p>
+        <h3>Capture</h3>
+        <p>Land on an opponent's token to send it back to their base. Safe squares (marked ★) protect tokens.</p>
+        <h3>Wager</h3>
+        <p>Winner takes the pot (wager × 2). Min 5 AX, max 1000 AX.</p>
+      `,
+      onExit: function () { window.location.href = '../index.html'; }
+    });
+    window.gameCommon.init();
   </script>
 </body>
 </html>

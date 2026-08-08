@@ -1,6 +1,7 @@
 const { validationResult } = require('express-validator');
 const User = require('../models/User');
 const { generateToken } = require('../utils/jwt');
+const { recordActivity } = require('../utils/activity');
 
 exports.register = async (req, res, next) => {
   try {
@@ -23,6 +24,12 @@ exports.register = async (req, res, next) => {
     });
 
     const token = generateToken(user._id);
+
+    recordActivity(user.id, 'register', {
+      username: user.username,
+      email: user.email,
+      method: 'email'
+    });
 
     res.status(201).json({
       success: true,
@@ -74,6 +81,12 @@ exports.login = async (req, res, next) => {
     }
 
     const token = generateToken(user._id);
+
+    recordActivity(user.id, 'login', {
+      username: user.username,
+      email: user.email,
+      method: 'email'
+    });
 
     res.json({
       success: true,

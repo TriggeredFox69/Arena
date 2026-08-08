@@ -7,14 +7,12 @@ const rateLimit = require('express-rate-limit');
 const dotenv = require('dotenv');
 const http = require('http');
 
-dotenv.config({ path: path.join(__dirname, '..', '.env') });
+dotenv.config({ path: path.join(__dirname, '..', '..', '.env') });
 
 process.env.PORT = process.env.PORT || '5000';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change_me';
 process.env.JWT_EXPIRE = process.env.JWT_EXPIRE || '7d';
-process.env.MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/arenax';
 
-const connectDB = require('./config/database');
 const errorHandler = require('./middleware/errorHandler');
 
 const authRoutes = require('./routes/authRoutes');
@@ -25,12 +23,23 @@ const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
 
-connectDB().catch((err) => {
-  console.error('[ArenaX] MongoDB connection failed:', err.message);
-  console.error('[ArenaX] Start MongoDB or set MONGODB_URI in backend/.env for login/register to work.');
-});
-
-app.use(helmet({ crossOriginResourcePolicy: false }));
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "blob:", "https://cdn.jsdelivr.net", "https://unpkg.com"],
+      scriptSrcElem: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://unpkg.com"],
+      // Frontend uses inline onclick= handlers throughout; helmet's default
+      // script-src-attr 'none' silently blocks every one of them.
+      scriptSrcAttr: ["'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "blob:", "https:"],
+      connectSrc: ["'self'"]
+    }
+  }
+}));
 app.use(cors({ origin: process.env.FRONTEND_URL || '*', credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -60,9 +69,21 @@ app.get(/^(?!\/api\/).*/, (req, res) => {
 
 app.use(errorHandler);
 
-server.listen(PORT, () => {
-  console.log(`ArenaX backend running at http://localhost:${PORT}`);
-  console.log(`Frontend served from: ${FRONTEND_DIR}`);
-});
+function startServer(port) {
+  server.listen(port, () => {
+    console.log(`ArenaX backend running at http://localhost:${port}`);
+    console.log(`Frontend served from: ${FRONTEND_DIR}`);
+  }).on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.warn(`Port ${port} is already in use. Trying port ${port + 1}...`);
+      startServer(port + 1);
+    } else {
+      console.error('Server failed to start:', err.message);
+      process.exit(1);
+    }
+  });
+}
+
+startServer(Number(PORT));
 
 module.exports = server;

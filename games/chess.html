@@ -359,6 +359,45 @@
     </aside>
   </div>
 
+  <script src="../js/app.js"></script>
+  <script src="../js/game-common.js"></script>
   <script src="chess.js"></script>
+  <script>
+    // === ArenaX GameCommon integration (wager, toolbar, timers, result) ===
+    document.addEventListener('DOMContentLoaded', () => {
+      const gc = new GameCommon({
+        gameKey: 'chess',
+        gameName: 'Chess Royale',
+        turnTimeLimit: 0,
+        rulesHTML: `
+          <h3>Objective</h3>
+          <p>Checkmate your opponent's king. You play White and move first.</p>
+          <h3>How to play</h3>
+          <p>Tap a piece to see its legal moves, then tap a highlighted square to move. All standard rules apply: castling, en passant, promotion.</p>
+          <h3>Draws</h3>
+          <p>A stalemate is a draw — your wager is refunded.</p>
+          <h3>Wager</h3>
+          <p>Winner takes the pot (wager × 2). Min 5 AX, max 1000 AX.</p>
+        `,
+        onExit: function () { window.location.href = '../index.html'; }
+      });
+      window.gameCommon = gc;
+
+      // Keep chess's own sound engine in sync with the shared mute toggle
+      if (localStorage.getItem('chess_sound') === 'off') {
+        gc.soundOn = false;
+        gc.updateSoundButton();
+      }
+      const baseToggle = gc.toggleSound.bind(gc);
+      gc.toggleSound = function () {
+        baseToggle();
+        if (typeof chessSoundOn !== 'undefined' && typeof toggleChessSound === 'function' && chessSoundOn !== gc.isSoundOn()) {
+          toggleChessSound();
+        }
+      };
+
+      gc.init();
+    });
+  </script>
 </body>
 </html>

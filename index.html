@@ -144,9 +144,12 @@
       width: min(1480px, calc(100% - 30px));
       margin: 0 auto;
       padding: 16px 0 30px;
-      display: grid;
+      display: none !important;
       grid-template-columns: 280px minmax(0, 1fr);
       gap: 18px;
+    }
+    .app:not(.hidden) {
+      display: grid !important;
     }
 
     .sidebar, .topbar, .card, .section-view, .modal {
@@ -1567,9 +1570,283 @@
         transition-duration: .01ms !important;
       }
     }
+
+    /* ---------- premium landing page ---------- */
+    .app.hidden { display: none !important; }
+    .landing-wrap {
+      display: none;
+      min-height: 100vh;
+      position: relative;
+      z-index: 1;
+      --landing-max: 1200px;
+    }
+    .landing-wrap.active { display: flex; flex-direction: column; }
+
+    .landing-nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+      padding: 18px 28px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: linear-gradient(180deg, rgba(6,6,8,.95) 0%, rgba(6,6,8,.75) 50%, rgba(6,6,8,0) 100%);
+      animation: fadeDown .6s ease both;
+    }
+    .landing-nav .brand { border: none; padding: 0; }
+    .landing-nav .brand-mark { width: 46px; height: 46px; border-radius: 15px; font-size: 21px; }
+    .landing-nav .brand-copy h1 { font-size: 21px; letter-spacing: .02em; }
+    .landing-nav .brand-copy p { color: var(--muted); font-size: 11px; margin-top: 2px; letter-spacing: .06em; }
+    .landing-nav-actions { display: flex; align-items: center; gap: 12px; }
+    .landing-nav-actions .btn {
+      padding: 10px 22px; border-radius: 999px; font-size: 13.5px; font-weight: 700;
+    }
+    .landing-nav-actions .btn-login {
+      background: transparent; color: var(--text);
+      border: 1px solid var(--line-strong);
+      box-shadow: none;
+      transition: .2s ease;
+    }
+    .landing-nav-actions .btn-login:hover {
+      border-color: var(--gold); color: var(--gold-light); background: rgba(216,164,59,.08);
+    }
+
+    .landing-hero {
+      position: relative;
+      display: grid; place-items: center;
+      min-height: 100vh;
+      padding: 130px 28px 90px;
+      overflow: hidden;
+      text-align: center;
+    }
+    .landing-hero::before {
+      content: "";
+      position: absolute; inset: 0; z-index: -1; pointer-events: none;
+      background:
+        radial-gradient(circle at 20% 30%, rgba(216,164,59,.12), transparent 45%),
+        radial-gradient(circle at 80% 70%, rgba(139,97,24,.14), transparent 45%);
+    }
+    .landing-hero-inner {
+      max-width: 920px;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .landing-hero .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 9px 18px; border-radius: 999px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,225,150,.09), rgba(255,225,150,.03));
+      color: var(--gold-light);
+      font-size: 11px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase;
+      margin-bottom: 28px;
+      animation: fadeUp .7s ease both;
+    }
+    .landing-hero .hero-badge span {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--success); box-shadow: 0 0 12px var(--success);
+      animation: livePulse 1.8s infinite;
+    }
+    .landing-hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(44px, 7.5vw, 92px);
+      line-height: 1.03;
+      letter-spacing: -.045em;
+      animation: fadeUp .8s .08s ease both;
+    }
+    .landing-hero h1 .grad {
+      background: linear-gradient(90deg, #fff2b8 0%, #d8a43b 25%, #ffe7a6 50%, #d8a43b 75%, #fff2b8 100%);
+      background-size: 220% auto;
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      animation: gradientText 5s linear infinite;
+    }
+    .landing-hero > .landing-hero-inner > p {
+      color: var(--muted);
+      font-size: clamp(15.5px, 2.1vw, 20px);
+      line-height: 1.75;
+      max-width: 660px;
+      margin-top: 26px;
+      animation: fadeUp .8s .16s ease both;
+    }
+    .landing-cta {
+      display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
+      margin-top: 42px;
+      animation: fadeUp .8s .24s ease both;
+    }
+    .landing-cta .btn {
+      padding: 16px 34px; border-radius: 999px; font-size: 15.5px; font-weight: 800;
+      position: relative; overflow: hidden;
+    }
+    .landing-cta .btn-primary {
+      background: var(--gold-gradient); color: #140d04;
+      box-shadow: 0 12px 34px rgba(216,164,59,.35), inset 0 1px 0 rgba(255,255,255,.45);
+      transition: transform .2s ease, box-shadow .2s ease;
+    }
+    .landing-cta .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 18px 44px rgba(216,164,59,.45); }
+    .landing-cta .btn-secondary {
+      background: rgba(255,255,255,.04); color: var(--text);
+      border: 1px solid var(--line-strong); backdrop-filter: blur(10px);
+      box-shadow: none;
+      transition: .2s ease;
+    }
+    .landing-cta .btn-secondary:hover { border-color: var(--gold); color: var(--gold-light); background: rgba(216,164,59,.08); }
+
+    .landing-trust {
+      width: min(var(--landing-max), calc(100% - 48px)); margin: 70px auto 0;
+      display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 1px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--line);
+      background: var(--line);
+      overflow: hidden;
+      animation: fadeUp .9s .34s ease both;
+    }
+    .trust-cell {
+      padding: 28px 18px; text-align: center;
+      background: rgba(12,12,16,.78); backdrop-filter: blur(12px);
+      transition: .25s ease;
+    }
+    .trust-cell:hover { background: rgba(216,164,59,.07); }
+    .trust-cell strong {
+      display: block; font-family: var(--font-display); font-size: 30px;
+      background: var(--gold-gradient); -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .trust-cell span { display: block; color: var(--muted); font-size: 12px; margin-top: 8px; letter-spacing: .04em; }
+
+    .landing-section {
+      width: min(var(--landing-max), calc(100% - 48px)); margin: 0 auto;
+      padding: 110px 0;
+    }
+    .landing-section-head {
+      text-align: center; max-width: 640px; margin: 0 auto 58px;
+    }
+    .landing-section-head h2 {
+      font-family: var(--font-display); font-size: clamp(28px, 4vw, 42px); letter-spacing: -.03em;
+    }
+    .landing-section-head h2 .grad {
+      background: var(--gold-gradient); -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .landing-section-head p { color: var(--muted); margin-top: 14px; font-size: 16px; line-height: 1.65; }
+
+    .landing-features {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;
+    }
+    .feature-card {
+      padding: 30px; border-radius: var(--radius-lg);
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, var(--panel), rgba(12,12,16,.65));
+      backdrop-filter: blur(18px);
+      transition: .3s ease;
+      position: relative; overflow: hidden;
+    }
+    .feature-card:hover { transform: translateY(-6px); border-color: var(--line-strong); box-shadow: var(--gold-glow); }
+    .feature-card::before {
+      content: ""; position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(280px circle at 50% 0%, rgba(255,225,150,.10), transparent 55%);
+      opacity: .6;
+    }
+    .feature-ico {
+      width: 54px; height: 54px; border-radius: 18px;
+      display: grid; place-items: center; font-size: 24px;
+      background: var(--gold-gradient); color: #140d04; margin-bottom: 20px;
+      box-shadow: 0 10px 28px rgba(216,164,59,.28);
+      position: relative; z-index: 1;
+    }
+    .feature-card h3 { font-family: var(--font-display); font-size: 18px; margin-bottom: 10px; position: relative; z-index: 1; }
+    .feature-card p { color: var(--muted); font-size: 14px; line-height: 1.65; position: relative; z-index: 1; }
+
+    .landing-steps {
+      display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 22px;
+    }
+    .step-card {
+      padding: 34px 28px; border-radius: var(--radius-lg);
+      border: 1px solid var(--line);
+      background: var(--panel); backdrop-filter: blur(16px);
+      text-align: center; position: relative; overflow: hidden;
+      transition: .25s ease;
+    }
+    .step-card:hover { border-color: var(--line-strong); transform: translateY(-4px); }
+    .step-card::after {
+      content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: var(--gold-gradient); opacity: .6;
+    }
+    .step-num {
+      width: 52px; height: 52px; border-radius: 50%; margin: 0 auto 18px;
+      display: grid; place-items: center;
+      font-family: var(--font-display); font-size: 18px; font-weight: 900;
+      background: rgba(216,164,59,.12); color: var(--gold-light);
+      border: 1px solid var(--line-strong);
+    }
+    .step-card h3 { font-family: var(--font-display); font-size: 18px; margin-bottom: 10px; }
+    .step-card p { color: var(--muted); font-size: 14px; line-height: 1.6; }
+
+    .landing-cta-banner {
+      width: min(var(--landing-max), calc(100% - 48px)); margin: 0 auto 110px;
+      padding: 70px 40px; border-radius: var(--radius-xl);
+      text-align: center;
+      border: 1px solid var(--line);
+      background:
+        radial-gradient(circle at 30% 0%, rgba(216,164,59,.18), transparent 50%),
+        linear-gradient(180deg, rgba(24,24,32,.9), rgba(12,12,16,.9));
+      position: relative; overflow: hidden;
+    }
+    .landing-cta-banner::before {
+      content: ""; position: absolute; inset: 0; pointer-events: none;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d8a43b' fill-opacity='.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      opacity: .7;
+    }
+    .landing-cta-banner h2 {
+      font-family: var(--font-display); font-size: clamp(26px, 4vw, 40px); position: relative; z-index: 1;
+    }
+    .landing-cta-banner p { color: var(--muted); margin: 14px auto 30px; max-width: 520px; font-size: 16px; position: relative; z-index: 1; }
+    .landing-cta-banner .btn {
+      padding: 16px 36px; border-radius: 999px; font-size: 15.5px; font-weight: 800;
+      background: var(--gold-gradient); color: #140d04; position: relative; z-index: 1;
+      box-shadow: 0 12px 34px rgba(216,164,59,.35);
+      transition: transform .2s ease;
+    }
+    .landing-cta-banner .btn:hover { transform: translateY(-2px); }
+
+    .landing-footer {
+      border-top: 1px solid var(--line);
+      background: rgba(6,6,8,.85); backdrop-filter: blur(12px);
+      padding: 44px 28px 34px;
+    }
+    .landing-footer-inner {
+      width: min(var(--landing-max), calc(100% - 48px)); margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap;
+    }
+    .landing-footer .brand { border: none; padding: 0; }
+    .landing-footer .brand-mark { width: 40px; height: 40px; border-radius: 13px; font-size: 18px; }
+    .landing-footer .brand-copy h1 { font-size: 18px; }
+    .landing-footer-copy { color: var(--muted-2); font-size: 13px; }
+    .landing-footer-links { display: flex; gap: 24px; }
+    .landing-footer-links a { color: var(--muted); font-size: 13.5px; transition: .2s; }
+    .landing-footer-links a:hover { color: var(--gold-light); }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 900px) {
+      .landing-trust { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .landing-steps { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .landing-nav { padding: 14px 18px; }
+      .landing-nav .brand-copy h1 { font-size: 17px; }
+      .landing-nav-actions .btn { padding: 9px 16px; font-size: 12.5px; }
+      .landing-hero { padding: 110px 18px 60px; }
+      .landing-trust { grid-template-columns: 1fr; margin-top: 50px; }
+      .landing-section { padding: 70px 0; }
+      .landing-features, .landing-steps { grid-template-columns: 1fr; }
+      .landing-footer-inner { flex-direction: column; text-align: center; }
+      .landing-footer-links { justify-content: center; flex-wrap: wrap; }
+    }
   </style>
 </head>
 <body>
+  <!-- Splash screen: hidden once dashboard/landing renders -->
+  <div id="arenax-splash" style="position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:#060608;color:#ffe7a6;font-family:Inter,sans-serif;flex-direction:column;gap:12px;text-align:center;">
+    <div style="font-family:Orbitron,sans-serif;font-size:42px;font-weight:800;letter-spacing:2px;">ARENA<span style="color:#d8a43b;">X</span></div>
+    <div style="color:#b7ab95;font-size:14px;">Loading dashboard...</div>
+    <div id="splash-debug" style="color:#f25c5c;font-size:12px;max-width:80%;margin-top:16px;display:none;"></div>
+  </div>
+
   <div class="bg-stage">
     <div class="bg-orb o1"></div>
     <div class="bg-orb o2"></div>
@@ -1580,7 +1857,7 @@
   <button class="btn mobile-menu" id="mobileMenu">☰</button>
   <div class="mobile-overlay" id="mobileOverlay" onclick="closeSidebar()"></div>
 
-  <div class="app">
+  <div class="app hidden" id="app">
     <aside class="sidebar" id="sidebar">
       <button class="sidebar-close" id="sidebarClose" title="Close menu">✕</button>
       <div class="brand">
@@ -1632,7 +1909,7 @@
           </div>
           <div class="xp-track"><div class="xp-fill" id="xpFill"></div></div>
           <div class="xp-note"><span id="levelText">Level 1</span><span id="xpText">0/5 games</span></div>
-          <button class="logout-btn" onclick="logout()">⏻ &nbsp;Logout</button>
+          <button class="logout-btn" id="logoutBtn" onclick="logout()">⏻ &nbsp;Logout</button>
           <div style="text-align:center;color:var(--muted-2);font-size:10px;margin-top:10px;">UI v2.2</div>
         </div>
       </div>
@@ -2412,6 +2689,128 @@
     </main>
   </div>
 
+  <!-- Premium landing page (shown when not authenticated) -->
+  <div class="landing-wrap" id="landingWrap">
+    <nav class="landing-nav">
+      <div class="brand">
+        <div class="brand-mark">X</div>
+        <div class="brand-copy">
+          <h1>ARENA<span>X</span></h1>
+          <p>Premium PvP Wager Platform</p>
+        </div>
+      </div>
+      <div class="landing-nav-actions">
+        <a class="btn btn-login" href="login.html">Log In</a>
+        <a class="btn" href="register.html">Sign Up</a>
+      </div>
+    </nav>
+
+    <section class="landing-hero">
+      <div class="landing-hero-inner">
+        <div class="hero-badge"><span></span>Live Arena Economy</div>
+        <h1>Compete. Earn. Trade. <span class="grad">Own the Arena.</span></h1>
+        <p>The premium dark wager arena built for skilled players. Win AX coins in PvP matches, trade peer-to-peer, farm AXLITE rewards, and climb seasonal leaderboards — all in black, gold, and white.</p>
+        <div class="landing-cta">
+          <a class="btn btn-primary" href="register.html">Create Free Account</a>
+          <a class="btn btn-secondary" href="login.html">Already a Player? Log In</a>
+        </div>
+      </div>
+
+      <div class="landing-trust">
+        <div class="trust-cell"><strong>6+</strong><span>Live Games</span></div>
+        <div class="trust-cell"><strong>1B</strong><span>AXLITE Pool</span></div>
+        <div class="trust-cell"><strong>P2P</strong><span>AX Marketplace</span></div>
+        <div class="trust-cell"><strong>24/7</strong><span>Live Matches</span></div>
+      </div>
+    </section>
+
+    <section class="landing-section">
+      <div class="landing-section-head">
+        <h2>Everything you need to <span class="grad">win big</span></h2>
+        <p>From classic competitive games to a full economy — ArenaX gives you the tools to play, earn, and trade like a pro.</p>
+      </div>
+      <div class="landing-features">
+        <div class="feature-card">
+          <div class="feature-ico">🎮</div>
+          <h3>Premium Games</h3>
+          <p>8 Ball Pool, Ludo, Chess, Checkers, Carrom and Glow Hockey — all tuned for competitive wagering.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-ico">🪙</div>
+          <h3>AX Wallet</h3>
+          <p>Buy, withdraw and send AX coins with USDT, local payment methods, and live valuation.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-ico">📈</div>
+          <h3>P2P Marketplace</h3>
+          <p>Trade AX directly with other players. Live order book, best rates, and instant order matching.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-ico">🪂</div>
+          <h3>AXLITE Airdrop</h3>
+          <p>Farm tokens through play, daily check-ins, missions and referrals to unlock season rewards.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-ico">👥</div>
+          <h3>Friends & Rooms</h3>
+          <p>Add players by UID, chat in real time, and create private rooms for head-to-head matches.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-ico">🏆</div>
+          <h3>Ranked Progression</h3>
+          <p>Level up from Rookie to Arena Veteran with stats, win rate rings, and seasonal leaderboards.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="landing-section" style="padding-top:0;">
+      <div class="landing-section-head">
+        <h2>How it <span class="grad">works</span></h2>
+        <p>Get started in minutes. Sign up, fund your wallet, and jump into your first wager match.</p>
+      </div>
+      <div class="landing-steps">
+        <div class="step-card">
+          <div class="step-num">01</div>
+          <h3>Create Account</h3>
+          <p>Sign up free in seconds. No credit card required to start playing casual matches.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">02</div>
+          <h3>Fund Your Wallet</h3>
+          <p>Buy AX through USDT or local methods. Your balance updates instantly in the dashboard.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">03</div>
+          <h3>Play & Earn</h3>
+          <p>Join PvP matches, win AX, trade on the marketplace, and climb the rankings.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="landing-cta-banner">
+      <h2>Ready to enter the Arena?</h2>
+      <p>Join thousands of players already competing, trading, and earning on ArenaX.</p>
+      <a class="btn" href="register.html">Get Started Free</a>
+    </section>
+
+    <footer class="landing-footer">
+      <div class="landing-footer-inner">
+        <div class="brand">
+          <div class="brand-mark">X</div>
+          <div class="brand-copy">
+            <h1>ARENA<span>X</span></h1>
+            <p>Premium PvP Wager Platform</p>
+          </div>
+        </div>
+        <div class="landing-footer-links">
+          <a href="login.html">Log In</a>
+          <a href="register.html">Sign Up</a>
+        </div>
+        <div class="landing-footer-copy">© 2026 ArenaX. Premium dark wager arena — black, gold, white.</div>
+      </div>
+    </footer>
+  </div>
+
   <div class="modal-backdrop" id="walletModal">
     <div class="modal">
       <h3 id="walletTitle">Buy AX</h3>
@@ -2466,10 +2865,40 @@
     </div>
   </div>
 
+  <div class="modal-backdrop" id="wagerGameModal">
+    <div class="modal">
+      <h3 id="wagerGameTitle">Set Wager</h3>
+      <p id="wagerGameSubtitle" style="color:var(--text-secondary);font-size:14px;margin:0 0 14px;">Minimum 5 AX · Maximum 1000 AX</p>
+      <div style="display:flex;align-items:center;gap:10px;background:rgba(232,188,79,0.08);border:1px solid rgba(232,188,79,0.18);border-radius:12px;padding:10px 14px;margin-bottom:14px;">
+        <span>🪙</span>
+        <span style="color:var(--text-secondary);font-size:14px;">Balance:</span>
+        <strong id="wagerGameBalance" style="font-family:Orbitron,monospace;color:#fff;">0</strong>
+        <span style="color:var(--text-secondary);font-size:14px;">AX</span>
+      </div>
+      <input class="input" id="wagerGameAmount" type="number" min="5" max="1000" step="1" value="10" placeholder="Wager in AX" style="font-size:22px;font-weight:800;text-align:center;font-family:Orbitron,monospace;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;justify-content:center;">
+        <button class="btn secondary" style="padding:6px 10px;font-size:12px;" onclick="setQuickWager(5)">5 AX</button>
+        <button class="btn secondary" style="padding:6px 10px;font-size:12px;" onclick="setQuickWager(25)">25 AX</button>
+        <button class="btn secondary" style="padding:6px 10px;font-size:12px;" onclick="setQuickWager(50)">50 AX</button>
+        <button class="btn secondary" style="padding:6px 10px;font-size:12px;" onclick="setQuickWager(100)">100 AX</button>
+        <button class="btn secondary" style="padding:6px 10px;font-size:12px;" onclick="setQuickWager(500)">500 AX</button>
+      </div>
+      <p id="wagerGameError" style="color:#ff5e5e;font-size:13px;min-height:18px;text-align:center;margin-top:8px;"></p>
+      <div class="modal-actions"><button class="btn secondary" onclick="closeModals()">Cancel</button><button class="btn" onclick="confirmGameWager()">Lock & Launch</button></div>
+    </div>
+  </div>
+
   <div class="toasts" id="toasts"></div>
 
+  <script src="js/api.js"></script>
   <script>
-    const user = JSON.parse(localStorage.getItem('arenax_user') || '{"username":"gandu","uid":"AX840364","coins":99,"gamesPlayed":2,"wins":1}');
+    try {
+    if (typeof api === 'undefined') {
+      document.body.innerHTML = '<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#060608;color:#f25c5c;font-family:Inter,sans-serif;text-align:center;padding:40px;"><div><h1 style="font-size:24px;margin-bottom:12px;">Failed to load api.js</h1><p>Check the browser console (F12 → Console) for errors.</p></div></div>';
+      throw new Error('api.js not loaded');
+    }
+    const sessionUser = api.isLoggedIn() ? api.getUser() : null;
+    const user = sessionUser || JSON.parse(localStorage.getItem('arenax_user') || '{"username":"Guest","uid":"AX000000","coins":0,"gamesPlayed":0,"wins":0}');
     const friends = JSON.parse(localStorage.getItem('arenax_friends') || '[{"name":"sami","uid":"AX10211","online":true},{"name":"pasha","uid":"AX99281","online":true},{"name":"rehan","uid":"AX56370","online":true}]');
     const upcomingGames = [
       { emoji:'🏰', title:'Castle Siege', meta:'Strategy battles with AXLITE farming.' },
@@ -2561,7 +2990,29 @@
     function el(id){ return document.getElementById(id); }
     function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
     function closeSidebar(){}
-    function openGame(path){ window.location.href = path; }
+    let pendingGamePath = '';
+    function openGame(path){
+      pendingGamePath = path;
+      const gameName = path.replace('games/','').replace('.html','');
+      const titleMap = { 'checkers':'Checkers Clash', 'ludo':'Ludo Stars', '8ball-pool':'8 Ball Pool', 'Glow-hockey':'Glow Hockey', 'chess':'Chess Royale', 'carrom':'Carrom Clash' };
+      if (el('wagerGameTitle')) el('wagerGameTitle').textContent = titleMap[gameName] || 'Set Wager';
+      const balance = Number(user.coins ?? user.balance ?? user.ax ?? 0);
+      if (el('wagerGameBalance')) el('wagerGameBalance').textContent = balance.toLocaleString();
+      if (el('wagerGameAmount')) el('wagerGameAmount').value = Math.min(10, balance || 10);
+      if (el('wagerGameError')) el('wagerGameError').textContent = '';
+      el('wagerGameModal')?.classList.add('show');
+    }
+    function setQuickWager(amount){ if (el('wagerGameAmount')) el('wagerGameAmount').value = amount; }
+    function confirmGameWager(){
+      const raw = el('wagerGameAmount')?.value || '';
+      const wager = parseInt(raw, 10);
+      const balance = Number(user.coins ?? user.balance ?? user.ax ?? 0);
+      const err = el('wagerGameError');
+      if (Number.isNaN(wager) || wager < 5 || wager > 1000) { if (err) err.textContent = 'Enter a wager between 5 and 1000 AX.'; return; }
+      if (wager > balance) { if (err) err.textContent = 'Insufficient balance for this wager.'; return; }
+      closeModals();
+      if (pendingGamePath) window.location.href = pendingGamePath + (pendingGamePath.includes('?') ? '&' : '?') + 'wager=' + wager;
+    }
     function toast(text){ const box = el('toasts'); if (!box) return; const d = document.createElement('div'); d.className='toast'; d.textContent = text; box.appendChild(d); setTimeout(()=>d.remove(), 2200); }
     function closeModals(){ document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('show')); }
     function openTradeModal(){ el('tradeModal')?.classList.add('show'); }
@@ -2616,18 +3067,68 @@
       renderChat();
       pushActivity('💬', 'Sent a chat message');
     }
+    // UIDs are shown/copied everywhere at max 8 chars. Accounts with a long
+    // backend UUID get a deterministic short form: "AX" + first 6 hex chars.
+    function shortUid(){
+      const raw = String(user.uid || user.id || '');
+      if (!raw) return 'AX840364';
+      if (raw.length <= 8 && !raw.includes('-')) return raw;
+      return ('AX' + raw.replace(/-/g, '').slice(0, 6)).toUpperCase();
+    }
     function copyUid(){
-      const uid = user.uid || user.id || 'AX840364';
-      navigator.clipboard?.writeText(uid);
+      navigator.clipboard?.writeText(shortUid());
       toast('UID copied');
     }
+    function showLanding(){
+      document.body.classList.add('landing-active');
+      el('landingWrap')?.classList.add('active');
+      el('app')?.classList.add('hidden');
+      const mm = document.getElementById('mobileMenu');
+      if (mm) mm.style.display = 'none';
+    }
+    window.showLanding = showLanding;
+
+    function showApp(){
+      document.body.classList.remove('landing-active');
+      el('landingWrap')?.classList.remove('active');
+      el('app')?.classList.remove('hidden');
+      const mm = document.getElementById('mobileMenu');
+      if (mm) mm.style.display = '';
+    }
+    window.showApp = showApp;
+
     function logout(){
-      localStorage.removeItem('arenax_user');
-      Object.keys(user).forEach(k => delete user[k]);
-      Object.assign(user, { username:'Guest', uid:'AX000000', coins:0, gamesPlayed:0, wins:0 });
-      saveUser();
-      render();
-      toast('Logged out');
+      const performLogout = () => {
+        localStorage.removeItem('arenax_token');
+        localStorage.removeItem('arenax_user');
+        localStorage.removeItem('arenaX_state_v1');
+        if (typeof api !== 'undefined') {
+          api.token = null;
+          api.user = null;
+        }
+        if (typeof arenaX !== 'undefined' && arenaX.logout) {
+          try { arenaX.logout(); } catch(e){}
+        }
+        showLanding();
+        window.location.href = 'index.html';
+      };
+
+      if (typeof api !== 'undefined' && typeof api.playAuthAnimation === 'function') {
+        api.playAuthAnimation('logout', 'Signing Out', 'Safely securing your ArenaX session...', performLogout);
+      } else {
+        performLogout();
+      }
+    }
+    window.logout = logout;
+    document.getElementById('logoutBtn')?.addEventListener('click', logout);
+
+    function checkAuth(){
+      if (!api.isLoggedIn()) {
+        showLanding();
+        return false;
+      }
+      showApp();
+      return true;
     }
 
     function getAirdropTier(){
@@ -2641,7 +3142,7 @@
     }
     function generateReferralCode(){
       if (!airdropReferralCode) {
-        airdropReferralCode = 'ARENA-' + Math.random().toString(36).slice(2, 6).toUpperCase() + (user.uid ? user.uid.slice(-4) : '0000');
+        airdropReferralCode = 'ARENA-' + Math.random().toString(36).slice(2, 6).toUpperCase() + shortUid().slice(-4);
         localStorage.setItem('arenax_axlite_referral_code', airdropReferralCode);
       }
       return airdropReferralCode;
@@ -2929,7 +3430,7 @@
       if (el('sellSuggestedRate')) el('sellSuggestedRate').textContent = '₨' + bestAsk.toFixed(1);
       if (el('buySuggestedRate')) el('buySuggestedRate').textContent = '₨' + bestBid.toFixed(1);
       const coins = Number(user.coins ?? user.balance ?? user.ax ?? 99);
-      const uid = user.uid || user.id || 'AX840364';
+      const uid = shortUid();
       const gamesPlayed = Number(user.gamesPlayed ?? user.played ?? user.matches ?? 0);
       const wins = Number(user.wins ?? user.won ?? 0);
       const winPct = gamesPlayed ? Math.round((wins / gamesPlayed) * 100) : 0;
@@ -3167,11 +3668,75 @@
 
     document.querySelectorAll('.nav-btn[data-section]').forEach(btn => btn.addEventListener('click', () => switchSection(btn.dataset.section)));
     if (el('chatInput')) el('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
-    initLiveOrders();
-    initChart();
-    render();
-    setInterval(tickAirdrop, 1000);
-    setInterval(simulateLiveOrders, 3500);
+
+    function hideSplash(){
+      const splash = document.getElementById('arenax-splash');
+      if (splash) splash.style.display = 'none';
+    }
+    function showSplashDebug(html){
+      const box = document.getElementById('splash-debug');
+      if (box) { box.style.display = 'block'; box.innerHTML = html; }
+    }
+
+    function initApp(){
+      try {
+        if (!checkAuth()) { hideSplash(); return; }
+        hideSplash();
+        switchSection('dashboard');
+        initLiveOrders();
+        initChart();
+        render();
+        setInterval(tickAirdrop, 1000);
+        setInterval(simulateLiveOrders, 3500);
+      } catch (err) {
+        console.error('[initApp] Dashboard failed to start:', err);
+        api.showNotification('Dashboard error: ' + (err && err.message ? err.message : 'unknown'), 'error');
+        document.body.insertAdjacentHTML('beforeend',
+          '<div style="position:fixed;left:18px;bottom:18px;z-index:10000;background:rgba(242,92,92,.14);border:1px solid rgba(242,92,92,.4);color:#ffc4c4;padding:14px 18px;border-radius:14px;max-width:420px;font-size:13px;backdrop-filter:blur(12px);">' +
+          '<strong>Dashboard error</strong><br>' + esc(err && err.message ? err.message : 'unknown') + '</div>');
+      }
+    }
+    initApp();
+
+    // Watchdog: if splash is still visible after 2.5s, force the right view and show debug info
+    setTimeout(() => {
+      try {
+        const splash = document.getElementById('arenax-splash');
+        if (!splash || splash.style.display === 'none') return;
+        const app = document.getElementById('app');
+        const landing = document.getElementById('landingWrap');
+        const computed = (el) => el ? window.getComputedStyle(el).display : 'missing';
+        const loggedIn = (typeof api !== 'undefined' && api.isLoggedIn());
+        showSplashDebug(
+          'Watchdog triggered.<br>' +
+          'Logged in: ' + loggedIn + '<br>' +
+          'app display: ' + computed(app) + '<br>' +
+          'landing display: ' + computed(landing) + '<br>' +
+          'If you still see this, open F12 → Console and share the red errors.'
+        );
+        if (loggedIn && app) {
+          document.body.classList.remove('landing-active');
+          landing?.classList.remove('active');
+          app.classList.remove('hidden');
+        } else if (landing) {
+          document.body.classList.add('landing-active');
+          landing.classList.add('active');
+          app?.classList.add('hidden');
+        }
+      } catch (e) {
+        showSplashDebug('Watchdog error: ' + (e && e.message ? e.message : 'unknown'));
+      }
+    }, 2500);
+
+    } catch (err) {
+      console.error('[index] Fatal startup error:', err);
+      const splash = document.getElementById('arenax-splash');
+      if (splash) {
+        splash.innerHTML = '<div style="font-family:Orbitron,sans-serif;font-size:42px;font-weight:800;letter-spacing:2px;">ARENA<span style="color:#d8a43b;">X</span></div><div style="color:#f25c5c;max-width:80%;margin-top:12px;">Dashboard failed to load</div><div style="color:#b7ab95;font-size:13px;max-width:80%;margin-top:8px;">' + String(err && err.message ? err.message : 'unknown error') + '</div><div style="color:#7d7263;font-size:12px;max-width:80%;margin-top:8px;">Open F12 → Console and share the red errors.</div>';
+      } else {
+        document.body.innerHTML = '<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#060608;color:#f25c5c;font-family:Inter,sans-serif;text-align:center;padding:40px;z-index:99999;"><div><h1 style="font-size:24px;margin-bottom:12px;">Dashboard failed to load</h1><p style="color:#b7ab95;max-width:500px;margin:0 auto 20px;">' + String(err && err.message ? err.message : 'unknown error') + '</p><p style="color:#7d7263;font-size:13px;">Open the browser console (F12 → Console) and share the red error messages.</p></div></div>';
+      }
+    }
   </script>
 </body>
 </html>

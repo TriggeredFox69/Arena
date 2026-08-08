@@ -82,34 +82,33 @@
             const terms = document.getElementById('terms').checked;
 
             if (!username || !email || !phone || !password) {
-                arenaX.showNotification('Please fill in all fields', 'error');
+                api.showNotification('Please fill in all fields', 'error');
                 return;
             }
 
             if (password !== confirmPassword) {
-                arenaX.showNotification('Passwords do not match', 'error');
+                api.showNotification('Passwords do not match', 'error');
                 return;
             }
 
             if (password.length < 6) {
-                arenaX.showNotification('Password must be at least 6 characters', 'error');
+                api.showNotification('Password must be at least 6 characters', 'error');
                 return;
             }
 
             if (!terms) {
-                arenaX.showNotification('Please accept the terms and conditions', 'error');
+                api.showNotification('Please accept the terms and conditions', 'error');
                 return;
             }
 
-            const result = await arenaX.register(username, email, phone, password);
+            const result = await api.register(username, email, phone, password);
 
             if (result.success) {
-                arenaX.showNotification('Registration successful! Welcome to ArenaX', 'success');
-                setTimeout(() => {
+                api.playAuthAnimation('register', 'Account Created', 'Welcome to ArenaX! Initializing your AX Wallet...', function () {
                     window.location.href = 'index.html';
-                }, 1500);
+                });
             } else {
-                arenaX.showNotification(result.message, 'error');
+                api.showNotification(result.message, 'error');
             }
         });
     </script>

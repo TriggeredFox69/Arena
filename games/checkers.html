@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="../js/app.js"></script>
+  <script src="../js/game-common.js"></script>
   <style>
     :root {
       --bg: #060608;
@@ -751,6 +753,12 @@
       S.winner = winner;
       stopTimer();
       const won = winner === DARK;
+      if (window.gameCommon && window.gameCommon.started) {
+        saveResult(winner);
+        if (won) confetti();
+        window.gameCommon.showResult(won, `<b>${winner === DARK ? 'Dark' : 'Light'}</b> wins the match.`);
+        return;
+      }
       setBanner(won ? 'Victory!' : 'Defeat', winner);
       setHint(`<b>${won ? 'You won' : (S.mode === 'ai' ? aiName() + ' won' : 'Player 2 won')}</b>Open the menu to start another match.`);
       log(`<b>${winner === DARK ? 'Dark' : 'Light'}</b> wins the match! ${won ? '🏆' : '⚔️'}`);
@@ -877,6 +885,7 @@
       $('log').innerHTML = '';
       log(`<b>${mode === 'ai' ? 'You vs ' + aiName() : 'Player 1 vs Player 2'}</b> — Dark moves first.`);
       startTurn();
+      if (window.gameCommon && window.gameCommon.startGamePlay) window.gameCommon.startGamePlay();
     }
 
     function showMenu() {
@@ -919,6 +928,26 @@
     renderPlayers();
     setBanner('Choose a mode', DARK);
     setHint('<b>Select AI or local mode</b>Open the match menu to begin.');
+  </script>
+  <script>
+    // === ArenaX GameCommon integration (wager, toolbar, timers, result) ===
+    window.gameCommon = new GameCommon({
+      gameKey: 'checkers',
+      gameName: 'Checkers Clash',
+      turnTimeLimit: 30,
+      rulesHTML: `
+        <h3>Objective</h3>
+        <p>Capture all of your opponent's pieces or block them so they have no legal moves. You play Dark and move first.</p>
+        <h3>How to play</h3>
+        <p>Select one of your pieces, then tap a highlighted square to move. Moves are diagonal on dark squares.</p>
+        <h3>Jumps &amp; Kings</h3>
+        <p>Jump over an enemy piece to capture it — jumps are forced when available. Reach the far row to crown a King, which can move backwards too.</p>
+        <h3>Wager</h3>
+        <p>Winner takes the pot (wager × 2). Min 5 AX, max 1000 AX.</p>
+      `,
+      onExit: function () { window.location.href = '../index.html'; }
+    });
+    window.gameCommon.init();
   </script>
 </body>
 </html>

@@ -1,6 +1,7 @@
 const { validationResult } = require('express-validator');
 const User = require('../models/User');
 const Transaction = require('../models/Transaction');
+const { recordActivity } = require('../utils/activity');
 
 const COIN_PRICE = parseInt(process.env.COIN_PRICE) || 10;
 
@@ -47,6 +48,13 @@ exports.deposit = async (req, res, next) => {
       status: 'completed',
       balanceAfter: user.coins
     }]);
+
+    recordActivity(user.id, 'deposit', {
+      method,
+      amount_pkr: amount,
+      coins,
+      balance_after: user.coins
+    });
 
     res.json({
       success: true,
@@ -98,6 +106,13 @@ exports.withdraw = async (req, res, next) => {
       balanceAfter: user.coins,
       notes: 'Withdrawal request initiated. Processing time: 24-48 hours'
     }]);
+
+    recordActivity(user.id, 'withdrawal', {
+      method,
+      coins,
+      amount_pkr: amount,
+      balance_after: user.coins
+    });
 
     res.json({
       success: true,

@@ -1,0 +1,28 @@
+import { createInitialState, baselineFor, TURN, MARGIN, STRIKER_R, COIN_R } from './state.js';
+import { Simulation } from './core/simulation.js';
+
+const s = createInitialState('ai', 'medium');
+const targetId = s.coins.find(c => c.color === 'white' && c.y > 400 && c.y < 460).id;
+for (const c of s.coins) if (c.id !== targetId) c.active = false;
+const target = s.coins.find(c => c.id === targetId);
+const pocket = { x: MARGIN + 10, y: MARGIN + 10 };
+const baselineY = baselineFor(TURN.P1);
+let sx = target.x + (baselineY - target.y) / (pocket.y - target.y) * (pocket.x - target.x);
+const dx = target.x - pocket.x;
+const dy = target.y - pocket.y;
+const d = Math.hypot(dx, dy);
+const gx = target.x + (dx / d) * (COIN_R + STRIKER_R + 0.5);
+const gy = target.y + (dy / d) * (COIN_R + STRIKER_R + 0.5);
+const dirX = gx - sx;
+const dirY = gy - baselineY;
+const dirLen = Math.hypot(dirX, dirY);
+const speed = 500;
+const vx = (dirX / dirLen) * speed;
+const vy = (dirY / dirLen) * speed;
+const sim = new Simulation(s);
+sim.setStriker(sx, baselineY);
+sim.shoot(vx, vy);
+sim.runUntilSettled(5000);
+console.log('events', sim.events.filter(e => e.type === 'pocket'));
+console.log('final striker', sim.state.striker.x.toFixed(1), sim.state.striker.y.toFixed(1));
+console.log('final target', target.x.toFixed(1), target.y.toFixed(1), 'active', target.active);

@@ -7,7 +7,11 @@ class ArenaX {
     constructor() {
         this.COIN_PRICE = 10; // 1 coin = ₨10
         this.storageKey = 'arenax_data';
+        this.MIN_WAGER = 5;
+        this.MAX_WAGER = 1000;
+        this._ready = false; // no balance mirroring until init() has synced
         this.init();
+        this._ready = true;
     }
 
     init() {
@@ -15,6 +19,30 @@ class ArenaX {
         if (!localStorage.getItem(this.storageKey)) {
             this.resetData();
         }
+        this.syncFromSessionUser();
+    }
+
+    // Bridge with the dashboard auth — api.js login stores arenax_user/arenax_token,
+    // while this class uses arenax_data. Keep them in sync so game pages recognize
+    // a dashboard login and share one balance.
+    syncFromSessionUser() {
+        try {
+            const sessionUser = JSON.parse(localStorage.getItem('arenax_user') || 'null');
+            if (!sessionUser) return;
+            const data = this.getData();
+            if (!data.user) {
+                data.user = {
+                    username: sessionUser.username || sessionUser.name || 'Player',
+                    email: sessionUser.email || '',
+                    phone: sessionUser.phone || ''
+                };
+            }
+            const sessionCoins = Number(sessionUser.coins ?? sessionUser.balance);
+            if (!Number.isNaN(sessionCoins)) {
+                data.coins = sessionCoins;
+            }
+            this.saveData(data);
+        } catch (e) { /* corrupted session data — ignore */ }
     }
 
     // Get current state
@@ -23,9 +51,18 @@ class ArenaX {
         return data ? JSON.parse(data) : this.getDefaultData();
     }
 
-    // Save state
+    // Save state (and mirror the balance back to the dashboard's session user)
     saveData(data) {
         localStorage.setItem(this.storageKey, JSON.stringify(data));
+        if (!this._ready) return; // during init we sync FROM the session, never over it
+        try {
+            const sessionUser = JSON.parse(localStorage.getItem('arenax_user') || 'null');
+            if (sessionUser && sessionUser.coins !== data.coins) {
+                sessionUser.coins = data.coins;
+                sessionUser.balance = data.coins;
+                localStorage.setItem('arenax_user', JSON.stringify(sessionUser));
+            }
+        } catch (e) { /* ignore */ }
     }
 
     // Default data structure
@@ -252,12 +289,31 @@ class ArenaX {
 
     // ========== Game Management ==========
 
-    startGame(gameName) {
+    validateWager(wager) {
+        const amount = parseInt(wager, 10);
+        if (Number.isNaN(amount)) {
+            return { valid: false, message: 'Wager must be a number' };
+        }
+        if (amount < this.MIN_WAGER) {
+            return { valid: false, message: `Minimum wager is ${this.MIN_WAGER} AX coins` };
+        }
+        if (amount > this.MAX_WAGER) {
+            return { valid: false, message: `Maximum wager is ${this.MAX_WAGER} AX coins` };
+        }
+        return { valid: true, amount };
+    }
+
+    startGame(gameName, wager = 1) {
         if (!this.isLoggedIn()) {
             return { success: false, message: 'Please login to play' };
         }
 
-        const result = this.deductCoins(1, 'game_entry');
+        const validation = this.validateWager(wager);
+        if (!validation.valid) {
+            return { success: false, message: validation.message };
+        }
+
+        const result = this.deductCoins(validation.amount, 'game_entry');
 
         if (!result.success) {
             return result;
@@ -270,12 +326,18 @@ class ArenaX {
         return {
             success: true,
             message: 'Game started',
-            balance: result.balance
+            balance: result.balance,
+            wager: validation.amount
         };
     }
 
-    endGame(gameName, won, coinsWon) {
+    startGameWithWager(gameName, wager) {
+        return this.startGame(gameName, wager);
+    }
+
+    endGame(gameName, won, coinsWon, wager = null) {
         const data = this.getData();
+        const entryWager = wager || Math.ceil(coinsWon / 2) || 1;
 
         if (won && coinsWon > 0) {
             data.coins += coinsWon;
@@ -297,6 +359,7 @@ class ArenaX {
             game: gameName,
             won: won,
             coinsWon: coinsWon,
+            wager: entryWager,
             timestamp: new Date().toISOString()
         });
 
@@ -311,6 +374,7 @@ class ArenaX {
             success: true,
             won: won,
             coinsWon: coinsWon,
+            wager: entryWager,
             balance: data.coins
         };
     }

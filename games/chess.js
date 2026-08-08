@@ -162,6 +162,7 @@ class ChessRoyale {
     this.enPassant = null;
     this.updateModeLabel();
     this.render();
+    if (window.gameCommon && window.gameCommon.startGamePlay) window.gameCommon.startGamePlay();
   }
 
   handleSquareClick(row, col) {
@@ -377,6 +378,13 @@ class ChessRoyale {
       if (outcome.toLowerCase().includes('checkmated')) chessSFX.mate();
       else chessSFX.stalemate();
       this.statusEl.textContent = outcome;
+      if (window.gameCommon && window.gameCommon.started) {
+        const isDraw = outcome.toLowerCase().includes('stalemate');
+        // this.turn is the side to move — if they are checkmated, the other side won.
+        // Player is always White (AI mode and wager accounting).
+        const playerWon = !isDraw && this.turn === 'b';
+        window.gameCommon.showResult(playerWon, `<b>${outcome}</b>`, isDraw);
+      }
       return;
     }
 

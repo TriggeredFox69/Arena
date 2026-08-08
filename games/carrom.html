@@ -2,1323 +2,146 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>ArenaX — Carrom Clash</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet" />
-  <style>
-    :root {
-      --bg: #050507;
-      --panel: rgba(18, 18, 24, 0.82);
-      --panel-solid: #12121a;
-      --line: rgba(255, 220, 140, 0.14);
-      --gold: #e5b84c;
-      --gold-light: #fff0c2;
-      --gold-dark: #b88a2d;
-      --gold-gradient: linear-gradient(135deg, #fff2b8, #e5b84c, #a6741c);
-      --text: #f7f3e8;
-      --muted: #b8ad99;
-      --muted-2: #7d7263;
-      --success: #53dc93;
-      --danger: #ff5e5e;
-      --info: #6cb4ff;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; touch-action: none; }
-    html, body { height: 100%; }
-
-    body {
-      background: radial-gradient(ellipse at top, #181820 0%, #050507 60%), #050507;
-      color: var(--text);
-      font-family: 'Inter', sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      overflow: hidden;
-      user-select: none;
-    }
-
-    .screen {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      transition: opacity 0.3s ease;
-    }
-    .screen.hidden { display: none; }
-
-    .menu {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 24px;
-      padding: 24px;
-      text-align: center;
-    }
-    .menu .brand { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 42px; letter-spacing: 0.04em; color: var(--gold-light); margin-bottom: 8px; }
-    .menu .brand span { color: var(--gold); }
-    .menu p { color: var(--muted); max-width: 420px; font-size: 15px; line-height: 1.5; }
-    .mode-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; max-width: 420px; width: 100%; }
-    .mode-card {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 20px;
-      padding: 22px 16px;
-      cursor: pointer;
-      transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
-      text-align: center;
-    }
-    .mode-card:hover { transform: translateY(-2px); border-color: var(--gold); box-shadow: 0 14px 40px rgba(229, 184, 76, 0.15); }
-    .mode-card .icon { font-size: 28px; margin-bottom: 10px; }
-    .mode-card h3 { font-family: 'Orbitron', sans-serif; font-size: 16px; margin-bottom: 6px; }
-    .mode-card small { color: var(--muted-2); font-size: 12px; }
-
-    .topbar {
-      width: 100%;
-      max-width: 760px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px 18px 10px;
-      gap: 12px;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-family: 'Orbitron', sans-serif;
-      font-weight: 900;
-      font-size: 18px;
-      letter-spacing: 0.04em;
-      color: var(--gold-light);
-    }
-
-    .brand-mark {
-      width: 34px;
-      height: 34px;
-      border-radius: 10px;
-      display: grid;
-      place-items: center;
-      background: var(--gold-gradient);
-      color: #140d04;
-      font-size: 15px;
-      box-shadow: 0 6px 18px rgba(229, 184, 76, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.4);
-    }
-
-    .topbar-actions { display: flex; gap: 8px; }
-
-    .btn {
-      padding: 9px 16px;
-      border-radius: 999px;
-      border: none;
-      font-weight: 800;
-      font-size: 12px;
-      cursor: pointer;
-      background: var(--gold-gradient);
-      color: #140d04;
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
-      font-family: 'Inter', sans-serif;
-      letter-spacing: 0.01em;
-    }
-
-    .btn.secondary {
-      background: rgba(255, 255, 255, 0.06);
-      color: var(--text);
-      border: 1px solid var(--line);
-    }
-
-    .btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(229, 184, 76, 0.35); }
-    .btn.secondary:hover { box-shadow: 0 8px 24px rgba(255, 255, 255, 0.08); }
-    .btn:active { transform: translateY(0); }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-
-    .hud {
-      width: 100%;
-      max-width: 760px;
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      padding: 0 18px 14px;
-    }
-
-    .hud-card {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 12px 10px;
-      text-align: center;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.04);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .hud-card::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: 18px;
-      pointer-events: none;
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), transparent 40%);
-    }
-
-    .hud-card .label { font-size: 10px; color: var(--muted-2); text-transform: uppercase; letter-spacing: 0.12em; font-weight: 900; margin-bottom: 4px; }
-    .hud-card .value { font-family: 'Orbitron', sans-serif; font-size: 20px; color: var(--text); line-height: 1.2; }
-    .hud-card .value.turn-p1 { color: var(--success); text-shadow: 0 0 18px rgba(83, 220, 147, 0.35); }
-    .hud-card .value.turn-p2 { color: var(--danger); text-shadow: 0 0 18px rgba(255, 94, 94, 0.35); }
-    .hud-card .sub { font-size: 10px; color: var(--muted-2); margin-top: 5px; min-height: 14px; }
-    .hud-card .status { font-size: 10px; color: var(--muted); margin-top: 3px; font-weight: 600; }
-
-    .queen-dot {
-      display: inline-block;
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      margin-right: 5px;
-      vertical-align: middle;
-      background: var(--gold);
-      box-shadow: 0 0 8px var(--gold);
-    }
-    .queen-dot.covered { background: var(--success); box-shadow: 0 0 8px var(--success); }
-    .queen-dot.lost { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
-
-    .board-wrap {
-      position: relative;
-      flex: 1;
-      width: 100%;
-      max-width: 760px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 18px 18px;
-    }
-
-    canvas {
-      width: 100%;
-      height: auto;
-      aspect-ratio: 1 / 1;
-      max-height: calc(100vh - 250px);
-      border-radius: 26px;
-      box-shadow:
-        0 40px 100px rgba(0, 0, 0, 0.65),
-        0 0 0 1px rgba(255, 220, 140, 0.10),
-        inset 0 0 0 10px rgba(130, 95, 55, 0.80);
-      background: #b08b5c;
-      cursor: crosshair;
-    }
-
-    .instruction {
-      position: absolute;
-      bottom: 32px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.55);
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 8px 18px;
-      font-size: 12px;
-      color: var(--muted);
-      pointer-events: none;
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-      max-width: 90%;
-      text-align: center;
-      transition: opacity 0.2s ease;
-    }
-    .instruction.fade { opacity: 0; }
-
-    .modal {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0, 0, 0, 0.72);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      z-index: 50;
-    }
-    .modal.show { display: flex; }
-
-    .modal-box {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 26px;
-      padding: 32px 28px;
-      text-align: center;
-      max-width: 380px;
-      width: 90%;
-      box-shadow: 0 40px 100px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-      transform: translateY(0);
-      animation: modalIn 0.35s ease;
-    }
-
-    @keyframes modalIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .modal-box h2 {
-      font-family: 'Orbitron', sans-serif;
-      font-size: 26px;
-      margin-bottom: 8px;
-      background: var(--gold-gradient);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .modal-box .scoreline {
-      font-family: 'Orbitron', sans-serif;
-      font-size: 18px;
-      color: var(--text);
-      margin-bottom: 6px;
-    }
-    .modal-box p { color: var(--muted); font-size: 13px; margin-bottom: 22px; }
-    .modal-actions { display: flex; gap: 10px; justify-content: center; }
-
-    @media (max-width: 480px) {
-      .menu .brand { font-size: 32px; }
-      .mode-grid { grid-template-columns: 1fr; }
-      .hud { gap: 8px; padding: 0 12px 12px; }
-      .hud-card { padding: 10px 8px; border-radius: 14px; }
-      .hud-card .value { font-size: 16px; }
-      .topbar { padding: 12px 12px 8px; }
-      .brand { font-size: 15px; }
-      .brand-mark { width: 28px; height: 28px; font-size: 12px; }
-      .btn { padding: 8px 13px; font-size: 11px; }
-      .instruction { font-size: 11px; padding: 7px 14px; bottom: 24px; }
-      .modal-box { padding: 26px 22px; }
-      .modal-box h2 { font-size: 22px; }
-    }
-  </style>
+  <link rel="stylesheet" href="../css/carrom.css" />
 </head>
 <body>
-  <div class="screen" id="menuScreen">
-    <div class="menu">
-      <div class="brand">ARENA<span>X</span></div>
-      <p>Choose a mode. Drag to place your striker along the baseline, then pull back to aim and release to shoot.</p>
-      <div class="mode-grid">
-        <div class="mode-card" onclick="startGame('ai')">
-          <div class="icon">🤖</div>
-          <h3>vs Computer</h3>
-          <small>Play against the AI</small>
+
+  <!-- === Menu Screen === -->
+  <div class="screen menu-screen" id="menuScreen">
+    <div class="menu-brand">
+      <div class="menu-logo">CARROM CLASH</div>
+      <div class="menu-subtitle">Strike · Pocket · Dominate</div>
+    </div>
+
+    <div class="menu-card">
+      <h2>Difficulty</h2>
+      <div class="diff-select">
+        <button class="diff-btn" id="btnAiEasy" data-diff="easy">Easy</button>
+        <button class="diff-btn active" id="btnAiMed" data-diff="medium">Medium</button>
+        <button class="diff-btn" id="btnAiHard" data-diff="hard">Hard</button>
+      </div>
+
+      <button class="btn btn-primary js-start" id="btnPlayAi" style="width:100%;">
+        🎯 Play vs AI
+      </button>
+      <button class="btn btn-secondary" id="btnLocal" style="width:100%;">
+        👥 Local 2-Player
+      </button>
+
+      <p class="menu-tip">Use mouse or touch: tap to place, drag back to aim, release to strike.</p>
+    </div>
+  </div>
+
+  <!-- === Game Screen === -->
+  <div class="screen game-screen hidden" id="gameScreen">
+    <!-- Header -->
+    <div class="game-header">
+      <div class="player-info" id="p1Info">
+        <div class="player-dot white-dot"></div>
+        <div class="player-meta">
+          <span class="player-name">You</span>
+          <span class="player-score">0</span>
         </div>
-        <div class="mode-card" onclick="startGame('local')">
-          <div class="icon">👥</div>
-          <h3>Local 2 Player</h3>
-          <small>Pass-and-play with a friend</small>
+      </div>
+
+      <div class="center-pills">
+        <div class="queen-status queen-active" id="queenStatus">👑 Queen Active</div>
+        <div class="turn-indicator" id="turnIndicator">Your Turn</div>
+      </div>
+
+      <div class="player-info" id="p2Info">
+        <div class="player-meta">
+          <span class="player-score">0</span>
+          <span class="player-name">AI</span>
         </div>
+        <div class="player-dot black-dot"></div>
+      </div>
+
+      <button class="btn-icon" id="btnSound" title="Toggle sound">🔊</button>
+    </div>
+
+    <!-- Board -->
+    <div class="canvas-wrap">
+      <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <!-- Instruction bar -->
+    <div class="instruction-bar" id="instruction">
+      Tap to position striker, then drag back to aim and release to shoot
+    </div>
+  </div>
+
+  <!-- === Result Modal === -->
+  <div class="modal-backdrop" id="resultModal">
+    <div class="modal">
+      <h2 id="resultTitle" class="winner-text">🏆 You Win!</h2>
+      <p id="resultMsg">Final: 0 - 0</p>
+      <div class="modal-btns">
+        <button class="btn btn-primary" id="btnRematch">🔄 Rematch</button>
+        <button class="btn btn-secondary" id="btnMenu">🏠 Menu</button>
       </div>
     </div>
   </div>
 
-  <div class="screen hidden" id="gameScreen">
-    <div class="topbar">
-      <div class="brand"><div class="brand-mark">X</div>ARENA<span style="color:var(--gold)">X</span></div>
-      <div class="topbar-actions">
-        <button class="btn secondary" id="muteBtn" onclick="toggleMute()">🔊</button>
-        <button class="btn secondary" onclick="backToMenu()">← Menu</button>
-        <button class="btn" onclick="resetGame()">Restart</button>
-      </div>
-    </div>
-
-    <div class="hud">
-      <div class="hud-card">
-        <div class="label" id="p1Label">Player 1</div>
-        <div class="value" id="scoreP1">0</div>
-        <div class="status" id="queenStatusP1"><span class="queen-dot"></span>On board</div>
-      </div>
-      <div class="hud-card">
-        <div class="label">Turn</div>
-        <div class="value turn-p1" id="turnText">Player 1</div>
-        <div class="sub" id="lastShot">—</div>
-      </div>
-      <div class="hud-card">
-        <div class="label" id="p2Label">Player 2</div>
-        <div class="value" id="scoreP2">0</div>
-        <div class="status" id="queenStatusP2"><span class="queen-dot"></span>On board</div>
-      </div>
-    </div>
-
-    <div class="board-wrap">
-      <canvas id="carromCanvas" width="800" height="800"></canvas>
-      <div class="instruction" id="instruction">Drag to place your striker, then pull back to aim</div>
-    </div>
-
-    <div class="modal" id="endModal">
-      <div class="modal-box">
-        <h2 id="endTitle">Game Over</h2>
-        <div class="scoreline" id="endScore">0 — 0</div>
-        <p id="endMsg">Winner message</p>
-        <div class="modal-actions">
-          <button class="btn secondary" onclick="backToMenu()">← Menu</button>
-          <button class="btn" onclick="resetGame()">Play Again</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
+  <script src="../js/app.js"></script>
+  <script src="../js/game-common.js"></script>
   <script>
+    // === ArenaX GameCommon integration (wager, toolbar, timers, result) ===
     (function () {
-      'use strict';
+      let carromStart = null;
+      let carromGetGame = null;
 
-      const TWO_PI = Math.PI * 2;
-      const SIZE = 800;
-      const MARGIN = 46;
-      const POCKET_RADIUS = 28;
-      const COIN_RADIUS = 16;
-      const STRIKER_RADIUS = 22;
-      const BASELINE_OFFSET = 118;
-      const BASELINE_WIDTH = 430;
-      const FRICTION_PER_SEC = 0.42;
-      const STOP_SPEED = 0.06;
-      const MAX_POWER = 26;
-      const WALL_BOUNCE = 0.72;
-      const COIN_RESTITUTION = 0.92;
-      const STRIKER_MASS = 3;
-      const COIN_MASS = 1;
-      const SUB_STEPS = 8;
-      const FIXED_DT = 1 / 120;
-
-      const COLORS = {
-        white: '#f5f0e3', whiteDark: '#c7bca6', whiteRim: '#d32f2f',
-        black: '#1a1a1a', blackDark: '#0d0d0d', blackRim: '#555',
-        red: '#c82e2e', redDark: '#761414', redRim: '#ffd700',
-        striker: '#e8e8e8', strikerDark: '#9fa0a3', board: '#c9a06a', boardDark: '#8b6238'
+      // Called by the game bundle once it has initialized
+      window.setupCarromGameCommon = function ({ startGame, backToMenu, getGame }) {
+        carromStart = startGame;
+        carromGetGame = getGame;
+        // Keep the game's audio engine in sync with the shared mute toggle
+        const g = carromGetGame && carromGetGame();
+        if (g && g.setMute) g.setMute(!window.gameCommon.isSoundOn());
+        // The shared toolbar has its own sound button — hide the in-header one
+        const hdrBtn = document.getElementById('btnSound');
+        if (hdrBtn) hdrBtn.style.display = 'none';
       };
 
-      const POCKETS = [
-        { x: MARGIN, y: MARGIN },
-        { x: SIZE - MARGIN, y: MARGIN },
-        { x: MARGIN, y: SIZE - MARGIN },
-        { x: SIZE - MARGIN, y: SIZE - MARGIN }
-      ];
+      window.gameCommon = new GameCommon({
+        gameKey: 'carrom',
+        gameName: 'Carrom Clash',
+        turnTimeLimit: 30,
+        rulesHTML: `
+          <h3>Objective</h3>
+          <p>Pocket all of your coins before your opponent does. First to 25 points wins the pot.</p>
+          <h3>How to play</h3>
+          <p>Tap the board to place the striker on your baseline, drag back to aim, and release to shoot.</p>
+          <h3>Queen</h3>
+          <p>The red queen is worth bonus points — you must cover it by pocketing one of your coins on the following shot.</p>
+          <h3>Wager</h3>
+          <p>Winner takes the pot (wager × 2). Min 5 AX, max 1000 AX.</p>
+        `,
+        onStart: function () {
+          // Wager locked — reveal the menu so the player picks a mode
+          document.getElementById('menuScreen')?.classList.remove('hidden');
+        },
+        onExit: function () {
+          window.location.href = '../index.html';
+        }
+      });
 
-      const canvas = document.getElementById('carromCanvas');
-      const ctx = canvas.getContext('2d');
-      canvas.width = SIZE; canvas.height = SIZE;
-
-      // ---- Audio ----
-      let audioCtx = null, soundOn = true;
-      function ensureAudio() {
-        if (typeof window.AudioContext === 'undefined') return false;
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') { audioCtx.resume(); }
-        return true;
-      }
-      window.toggleMute = function () {
-        soundOn = !soundOn;
-        const btn = document.getElementById('muteBtn');
-        if (btn) btn.textContent = soundOn ? '🔊' : '🔇';
-        ensureAudio();
+      // Sync game audio mute with the shared sound toggle
+      const baseToggle = window.gameCommon.toggleSound.bind(window.gameCommon);
+      window.gameCommon.toggleSound = function () {
+        baseToggle();
+        const g = carromGetGame && carromGetGame();
+        if (g && g.setMute) g.setMute(!window.gameCommon.isSoundOn());
       };
 
-      function now() { return audioCtx ? audioCtx.currentTime : 0; }
-      function playTone(freq, duration, type, volume, when, ramp) {
-        if (!soundOn || !audioCtx) return;
-        type = type || 'sine'; volume = volume === undefined ? 0.18 : volume;
-        ramp = ramp !== false;
-        const t = when || now();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, t);
-        gain.gain.setValueAtTime(volume, t);
-        if (ramp) gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
-        else gain.gain.setValueAtTime(0, t + duration);
-        osc.connect(gain).connect(audioCtx.destination);
-        osc.start(t);
-        osc.stop(t + duration + 0.02);
-      }
-      function playNoise(duration, volume, when, lowpass) {
-        if (!soundOn || !audioCtx) return;
-        volume = volume === undefined ? 0.22 : volume;
-        lowpass = lowpass === undefined ? 2200 : lowpass;
-        const t = when || now();
-        const bufferSize = Math.max(1, Math.floor(audioCtx.sampleRate * duration));
-        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1);
-        const noise = audioCtx.createBufferSource();
-        noise.buffer = buffer;
-        const filter = audioCtx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.value = lowpass;
-        const gain = audioCtx.createGain();
-        gain.gain.setValueAtTime(volume, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
-        noise.connect(filter).connect(gain).connect(audioCtx.destination);
-        noise.start(t);
-        noise.stop(t + duration + 0.02);
-      }
-      function playStrike(power) {
-        if (!soundOn) return;
-        const t = now();
-        const vol = 0.12 + Math.min((power || 10) / MAX_POWER, 1) * 0.18;
-        playNoise(0.12, vol, t, 1800);
-        playTone(180 + Math.random() * 40, 0.1, 'square', vol * 0.45, t, true);
-        playTone(220 + Math.random() * 50, 0.1, 'triangle', vol * 0.35, t + 0.01, true);
-      }
-      function playClack(impact) {
-        if (!soundOn) return;
-        const t = now();
-        const vol = Math.min(0.05 + (impact || 0.5) * 0.25, 0.28);
-        playNoise(0.06, vol, t, 3500);
-        playTone(600 + Math.random() * 120, 0.08, 'square', vol * 0.5, t, true);
-        playTone(900 + Math.random() * 150, 0.08, 'sine', vol * 0.35, t + 0.01, true);
-      }
-      function playSink() {
-        if (!soundOn) return;
-        const t = now();
-        playNoise(0.16, 0.22, t, 1600);
-        playTone(320, 0.12, 'sine', 0.16, t, true);
-        playTone(240, 0.14, 'sine', 0.11, t + 0.06, true);
-        playTone(160, 0.16, 'sine', 0.08, t + 0.12, true);
-      }
-      function playFoul() {
-        if (!soundOn) return;
-        const t = now();
-        playTone(180, 0.2, 'sawtooth', 0.18, t, true);
-        playTone(140, 0.2, 'sawtooth', 0.14, t + 0.08, true);
-      }
-      function playVictory() {
-        if (!soundOn) return;
-        const t = now();
-        [523.25, 659.25, 783.99, 1046.5, 1318.5, 1046.5].forEach((f, i) => playTone(f, 0.22, 'sine', 0.16, t + i * 0.1, true));
-      }
-
-      // ---- Texture generation ----
-      function createWoodTexture() {
-        const c = document.createElement('canvas');
-        c.width = 512; c.height = 512;
-        const x = c.getContext('2d');
-        const grad = x.createLinearGradient(0, 0, 512, 512);
-        grad.addColorStop(0, '#c9a06a');
-        grad.addColorStop(0.45, '#b88a2d');
-        grad.addColorStop(1, '#8b6238');
-        x.fillStyle = grad; x.fillRect(0, 0, 512, 512);
-        x.globalCompositeOperation = 'multiply';
-        for (let i = 0; i < 300; i++) {
-          const sx = Math.random() * 512, sy = Math.random() * 512;
-          const len = 80 + Math.random() * 220;
-          const angle = (Math.random() - 0.5) * 0.3 + Math.PI * 0.35;
-          x.beginPath(); x.moveTo(sx, sy);
-          const cp1x = sx + Math.cos(angle) * len * 0.4 + (Math.random() - 0.5) * 30;
-          const cp1y = sy + Math.sin(angle) * len * 0.4 + (Math.random() - 0.5) * 30;
-          const cp2x = sx + Math.cos(angle) * len * 0.8 + (Math.random() - 0.5) * 30;
-          const cp2y = sy + Math.sin(angle) * len * 0.8 + (Math.random() - 0.5) * 30;
-          const ex = sx + Math.cos(angle) * len, ey = sy + Math.sin(angle) * len;
-          x.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, ex, ey);
-          x.strokeStyle = `rgba(70, 40, 15, ${0.05 + Math.random() * 0.08})`;
-          x.lineWidth = 1 + Math.random() * 2.5;
-          x.stroke();
-        }
-        x.globalCompositeOperation = 'source-over';
-        const img = x.getImageData(0, 0, 512, 512);
-        const d = img.data;
-        for (let i = 0; i < d.length; i += 4) {
-          const noise = (Math.random() - 0.5) * 10;
-          d[i] = Math.max(0, Math.min(255, d[i] + noise));
-          d[i + 1] = Math.max(0, Math.min(255, d[i + 1] + noise));
-          d[i + 2] = Math.max(0, Math.min(255, d[i + 2] + noise));
-        }
-        x.putImageData(img, 0, 0);
-        return ctx.createPattern(c, 'repeat');
-      }
-      const woodPattern = createWoodTexture();
-
-      // ---- Helpers ----
-      function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
-      function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
-      function makePiece(x, y, color, value, side) {
-        return { x, y, vx: 0, vy: 0, r: COIN_RADIUS, color, value, side, trail: [] };
-      }
-      function baselineY(side) { return side === 'p2' ? BASELINE_OFFSET : SIZE - BASELINE_OFFSET; }
-      function legalStrikerX(x) {
-        return clamp(x, SIZE / 2 - BASELINE_WIDTH / 2 + STRIKER_RADIUS, SIZE / 2 + BASELINE_WIDTH / 2 - STRIKER_RADIUS);
-      }
-
-      // ---- State ----
-      let gameMode = 'ai'; // 'ai' | 'local'
-      let coins = [];
-      let striker = { x: SIZE / 2, y: SIZE - BASELINE_OFFSET, vx: 0, vy: 0, r: STRIKER_RADIUS, side: 'p1', trail: [] };
-      let turn = 'p1';
-      let scores = { p1: 0, p2: 0 };
-      let queenPocketedBy = null; // side that pocketed queen; needs cover
-      let gameOver = false;
-      let particles = [];
-      let lastShot = { text: '—', type: 'neutral' };
-
-      let inputMode = 'place'; // 'place' | 'aim' | 'wait'
-      let pointer = { x: 0, y: 0, down: false };
-      let aimStart = null;
-      let aimEnd = null;
-
-      let shotActive = false;
-      let shotResolved = false;
-      let settling = false;
-      let settlingTimer = 0;
-      let accumulator = 0;
-      let lastTime = 0;
-      let aiPreview = null;
-      let aiTimer = 0;
-      let shake = 0;
-      let rAFId = null;
-
-      function setupCoins() {
-        coins = [];
-        coins.push(makePiece(SIZE / 2, SIZE / 2, 'red', 50, null)); // Queen
-        const layers = [{ n: 6, d: COIN_RADIUS * 2.15 }, { n: 12, d: COIN_RADIUS * 4.3 }];
-        let idx = 0;
-        for (const layer of layers) {
-          for (let i = 0; i < layer.n; i++) {
-            const angle = (i / layer.n) * TWO_PI - Math.PI / 2;
-            const x = SIZE / 2 + Math.cos(angle) * layer.d;
-            const y = SIZE / 2 + Math.sin(angle) * layer.d;
-            const color = (idx % 2 === 0) ? 'white' : 'black';
-            coins.push(makePiece(x, y, color, 10, color));
-            idx++;
-          }
-        }
-      }
-
-      function resetStriker(side) {
-        striker.x = SIZE / 2;
-        striker.y = baselineY(side);
-        striker.vx = 0; striker.vy = 0;
-        striker.side = side;
-        striker.trail = [];
-      }
-
-      window.startGame = function (mode) {
-        ensureAudio();
-        gameMode = mode;
-        document.getElementById('menuScreen').classList.add('hidden');
-        document.getElementById('gameScreen').classList.remove('hidden');
-        document.getElementById('p1Label').textContent = mode === 'ai' ? 'You' : 'Player 1';
-        document.getElementById('p2Label').textContent = mode === 'ai' ? 'Computer' : 'Player 2';
-        resetGame();
-      };
-
-      window.backToMenu = function () {
-        document.getElementById('endModal').classList.remove('show');
-        document.getElementById('gameScreen').classList.add('hidden');
-        document.getElementById('menuScreen').classList.remove('hidden');
-        gameOver = true;
-      };
-
-      window.resetGame = function () {
-        ensureAudio();
-        setupCoins();
-        turn = 'p1';
-        scores = { p1: 0, p2: 0 };
-        queenPocketedBy = null;
-        gameOver = false;
-        particles = [];
-        lastShot = { text: '—', type: 'neutral' };
-        inputMode = 'place';
-        pointer.down = false;
-        aimStart = null; aimEnd = null;
-        shotActive = false; shotResolved = false;
-        settling = false; settlingTimer = 0;
-        accumulator = 0; lastTime = 0;
-        aiPreview = null; aiTimer = 0;
-        shake = 0;
-        resetStriker('p1');
-        hideModal();
-        updateHUD();
-        if (!rAFId) rAFId = requestAnimationFrame(loop);
-      };
-
-      setupCoins();
-      updateHUD();
-
-      // ---- Input ----
-      function getPointerPos(e) {
-        const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-        const clientX = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
-        const clientY = e.clientY ?? e.touches?.[0]?.clientY ?? 0;
-        return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
-      }
-
-      function canInput() {
-        if (gameOver) return false;
-        if (settling || shotActive) return false;
-        if (gameMode === 'ai' && turn === 'p2') return false;
-        return true;
-      }
-
-      function onPointerDown(e) {
-        ensureAudio();
-        if (!canInput()) return;
-        const p = getPointerPos(e);
-        pointer.x = p.x; pointer.y = p.y; pointer.down = true;
-        const d = Math.hypot(p.x - striker.x, p.y - striker.y);
-        if (d < striker.r * 2.5) {
-          inputMode = 'aim';
-          aimStart = { x: striker.x, y: striker.y };
-          aimEnd = { x: p.x, y: p.y };
-        } else if (inputMode === 'place') {
-          striker.x = legalStrikerX(p.x);
-          striker.y = baselineY(turn);
-        }
-      }
-
-      function onPointerMove(e) {
-        const p = getPointerPos(e);
-        pointer.x = p.x; pointer.y = p.y;
-        if (!pointer.down || !canInput()) return;
-        if (inputMode === 'place') {
-          striker.x = legalStrikerX(p.x);
-          striker.y = baselineY(turn);
-        } else if (inputMode === 'aim') {
-          aimEnd = { x: p.x, y: p.y };
-        }
-      }
-
-      function onPointerUp(e) {
-        pointer.down = false;
-        if (!canInput()) return;
-        if (inputMode === 'aim' && aimEnd && aimStart) {
-          const dx = aimStart.x - aimEnd.x;
-          const dy = aimStart.y - aimEnd.y;
-          const dragLen = Math.hypot(dx, dy);
-          if (dragLen > 8) {
-            const power = Math.min(dragLen * 0.12, MAX_POWER);
-            const angle = Math.atan2(dy, dx);
-            striker.vx = Math.cos(angle) * power;
-            striker.vy = Math.sin(angle) * power;
-            shotActive = true;
-            shotResolved = false;
-            inputMode = 'wait';
-            playStrike(power);
-          } else {
-            inputMode = 'place';
-          }
-        } else {
-          inputMode = 'place';
-        }
-        aimStart = null; aimEnd = null;
-      }
-
-      canvas.addEventListener('pointerdown', onPointerDown);
-      window.addEventListener('pointermove', onPointerMove);
-      window.addEventListener('pointerup', onPointerUp);
-      canvas.addEventListener('touchstart', (e) => { if (e.cancelable) e.preventDefault(); }, { passive: false });
-
-      // ---- Physics ----
-      function integrate(body, dt) {
-        const speed = Math.hypot(body.vx, body.vy);
-        if (speed < STOP_SPEED) { body.vx = 0; body.vy = 0; return; }
-        const decay = Math.pow(FRICTION_PER_SEC, dt);
-        body.x += body.vx * dt * 60; // scale so values feel similar to old code
-        body.y += body.vy * dt * 60;
-        body.vx *= decay;
-        body.vy *= decay;
-      }
-
-      function solveWallCollisions(body) {
-        const r = body.r;
-        if (body.x - r < MARGIN) { body.x = MARGIN + r; body.vx *= -WALL_BOUNCE; }
-        if (body.x + r > SIZE - MARGIN) { body.x = SIZE - MARGIN - r; body.vx *= -WALL_BOUNCE; }
-        if (body.y - r < MARGIN) { body.y = MARGIN + r; body.vy *= -WALL_BOUNCE; }
-        if (body.y + r > SIZE - MARGIN) { body.y = SIZE - MARGIN - r; body.vy *= -WALL_BOUNCE; }
-      }
-
-      function solveBodyCollision(a, b) {
-        const dx = b.x - a.x;
-        const dy = b.y - a.y;
-        const d = Math.hypot(dx, dy);
-        const minD = a.r + b.r;
-        if (d >= minD || d === 0) return 0;
-        const nx = dx / d;
-        const ny = dy / d;
-        const overlap = minD - d;
-        // separate positions
-        const totalMass = (a === striker ? STRIKER_MASS : COIN_MASS) + (b === striker ? STRIKER_MASS : COIN_MASS);
-        const invA = (a === striker ? 1 / STRIKER_MASS : 1 / COIN_MASS);
-        const invB = (b === striker ? 1 / STRIKER_MASS : 1 / COIN_MASS);
-        const factor = overlap / (invA + invB);
-        a.x -= nx * factor * invA;
-        a.y -= ny * factor * invA;
-        b.x += nx * factor * invB;
-        b.y += ny * factor * invB;
-
-        const tx = -ny, ty = nx;
-        const vA_n = a.vx * nx + a.vy * ny;
-        const vA_t = a.vx * tx + a.vy * ty;
-        const vB_n = b.vx * nx + b.vy * ny;
-        const vB_t = b.vx * tx + b.vy * ty;
-        const mA = (a === striker ? STRIKER_MASS : COIN_MASS);
-        const mB = (b === striker ? STRIKER_MASS : COIN_MASS);
-        const restitution = (a === striker || b === striker) ? COIN_RESTITUTION : COIN_RESTITUTION;
-        const vA_n_final = (vA_n * (mA - mB) + 2 * mB * vB_n) / (mA + mB) * restitution;
-        const vB_n_final = (vB_n * (mB - mA) + 2 * mA * vA_n) / (mA + mB) * restitution;
-        a.vx = vA_n_final * nx + vA_t * tx;
-        a.vy = vA_n_final * ny + vA_t * ty;
-        b.vx = vB_n_final * nx + vB_t * tx;
-        b.vy = vB_n_final * ny + vB_t * ty;
-        return Math.abs(vA_n - vB_n);
-      }
-
-      function stepPhysics(dt) {
-        const bodies = [striker, ...coins];
-        for (const b of bodies) integrate(b, dt);
-        for (const b of bodies) solveWallCollisions(b);
-        // multiple iterations for stability when clustered
-        let maxImpact = 0;
-        for (let iter = 0; iter < 3; iter++) {
-          for (let i = 0; i < bodies.length; i++) {
-            for (let j = i + 1; j < bodies.length; j++) {
-              const impact = solveBodyCollision(bodies[i], bodies[j]);
-              if (impact > maxImpact) maxImpact = impact;
-            }
-          }
-        }
-        if (maxImpact > 1.5) {
-          playClack(Math.min(maxImpact / 8, 1));
-          shake = Math.min(shake + maxImpact * 0.15, 4);
-        }
-      }
-
-      // ---- Rules / Turn logic ----
-      function sideColor(side) { return side === 'p1' ? 'white' : 'black'; }
-      function resolvePockets() {
-        let pocketedOwn = 0, pocketedOpp = 0, pocketedQueen = false, foulStriker = false;
-        const currentColor = sideColor(turn);
-        const opp = turn === 'p1' ? 'p2' : 'p1';
-
-        for (let i = coins.length - 1; i >= 0; i--) {
-          const c = coins[i];
-          for (const p of POCKETS) {
-            if (dist(c, p) < POCKET_RADIUS - 4) {
-              if (c.color === 'red') {
-                pocketedQueen = true;
-                queenPocketedBy = turn;
-                spawnParticles(p.x, p.y, 'red', 24);
-                coins.splice(i, 1);
-                playSink();
-              } else if (c.color === currentColor) {
-                pocketedOwn++;
-                scores[turn] += c.value;
-                spawnParticles(p.x, p.y, 'white', 18);
-                coins.splice(i, 1);
-                playSink();
-                if (queenPocketedBy === turn) { scores[turn] += 50; queenPocketedBy = null; }
-              } else {
-                pocketedOpp++;
-                spawnParticles(p.x, p.y, 'black', 18);
-                coins.splice(i, 1);
-                playSink();
-                scores[opp] += c.value;
-                if (queenPocketedBy === turn) { scores[opp] += 50; queenPocketedBy = null; }
-              }
-              break;
-            }
-          }
-        }
-
-        for (const p of POCKETS) {
-          if (dist(striker, p) < POCKET_RADIUS - 4) {
-            foulStriker = true;
-            scores[turn] = Math.max(0, scores[turn] - 10);
-            striker.vx = 0; striker.vy = 0;
-            spawnParticles(p.x, p.y, 'black', 16);
-            playFoul();
-            break;
-          }
-        }
-
-        if (foulStriker) {
-          if (pocketedQueen) {
-            coins.push(makePiece(SIZE / 2, SIZE / 2, 'red', 50, null));
-            queenPocketedBy = null;
-          }
-          return 'foul_striker';
-        }
-        if (pocketedQueen && !pocketedOwn && !pocketedOpp) {
-          coins.push(makePiece(SIZE / 2, SIZE / 2, 'red', 50, null));
-          queenPocketedBy = null;
-          return 'foul_queen';
-        }
-        if (pocketedOpp > 0) return 'foul_opp';
-        if (pocketedOwn > 0) return 'continue';
-        if (pocketedQueen) return 'continue';
-        return 'miss';
-      }
-
-      function endTurn() {
-        shotResolved = true;
-        shotActive = false;
-        inputMode = 'place';
-        aiPreview = null;
-        striker.vx = 0; striker.vy = 0;
-        turn = turn === 'p1' ? 'p2' : 'p1';
-        resetStriker(turn);
-        updateHUD();
-        if (turn === 'p2' && gameMode === 'ai' && !gameOver) aiTimer = 0.8;
-      }
-
-      function finishShot() {
-        if (gameOver) return;
-        const result = resolvePockets();
-        let msg = '', type = 'neutral';
-        switch (result) {
-          case 'continue':
-            msg = turn === 'p1' ? 'Nice shot! Go again' : 'Opponent continues';
-            type = 'good';
-            break;
-          case 'miss':
-            msg = turn === 'p1' ? 'Missed' : 'Opponent missed';
-            break;
-          case 'foul_striker':
-            msg = 'Foul! Striker sunk (-10)';
-            type = 'bad';
-            break;
-          case 'foul_queen':
-            msg = 'Foul! Queen must be covered';
-            type = 'bad';
-            break;
-          case 'foul_opp':
-            msg = 'Foul! Wrong coin';
-            type = 'bad';
-            break;
-        }
-        lastShot = { text: msg, type };
-        updateHUD();
-        if (result === 'continue') {
-          shotResolved = false;
-          shotActive = false;
-          inputMode = 'place';
-          aiPreview = null;
-          striker.vx = 0; striker.vy = 0;
-          resetStriker(turn);
-          if (turn === 'p2' && gameMode === 'ai' && !gameOver) aiTimer = 0.8;
-          return;
-        }
-        checkEnd();
-        if (!gameOver) setTimeout(endTurn, 500);
-      }
-
-      function checkEnd() {
-        const colored = coins.filter(c => c.color !== 'red').length;
-        if (colored === 0) {
-          gameOver = true;
-          let title, msg;
-          if (scores.p1 > scores.p2) { title = gameMode === 'ai' ? 'You Won!' : 'Player 1 Wins!'; msg = 'Cleared the board first.'; }
-          else if (scores.p2 > scores.p1) { title = gameMode === 'ai' ? 'You Lost' : 'Player 2 Wins!'; msg = gameMode === 'ai' ? 'The computer cleared the board first.' : 'Player 2 cleared the board first.'; }
-          else { title = 'Draw'; msg = 'Evenly matched.'; }
-          document.getElementById('endTitle').textContent = title;
-          document.getElementById('endScore').textContent = `${scores.p1} — ${scores.p2}`;
-          document.getElementById('endMsg').textContent = msg;
-          document.getElementById('endModal').classList.add('show');
-          playVictory();
-          updateHUD();
-        }
-      }
-
-      // ---- AI ----
-      function aiChooseShot() {
-        const aiColor = sideColor('p2');
-        const targets = coins.filter(c => c.color === aiColor || c.color === 'red');
-        let best = null, bestScore = Infinity;
-        const startY = baselineY('p2');
-        for (const c of targets) {
-          for (const p of POCKETS) {
-            const angleToPocket = Math.atan2(p.y - c.y, p.x - c.x);
-            const strikeX = c.x - Math.cos(angleToPocket) * (c.r + STRIKER_RADIUS + 2);
-            const strikeY = c.y - Math.sin(angleToPocket) * (c.r + STRIKER_RADIUS + 2);
-            if (strikeY < BASELINE_OFFSET + STRIKER_RADIUS) continue;
-            const pocketDist = dist(c, p);
-            const strikerDist = Math.hypot(strikeX - SIZE / 2, strikeY - startY);
-            const downward = strikeY > startY ? 1 : 2.5;
-            const score = (pocketDist + strikerDist * 0.5) * downward;
-            if (score < bestScore) {
-              bestScore = score;
-              best = { coin: c, pocket: p, strikeX, strikeY };
-            }
-          }
-        }
-        return best;
-      }
-
-      function aiTakeShot() {
-        if (gameOver || turn !== 'p2') return;
-        resetStriker('p2');
-        const best = aiChooseShot();
-        if (!best) {
-          striker.x = SIZE / 2 + (Math.random() - 0.5) * 120;
-          striker.y = BASELINE_OFFSET;
-          const angle = Math.PI / 2 + (Math.random() - 0.5) * 0.8;
-          const power = 8 + Math.random() * 8;
-          striker.vx = Math.cos(angle) * power;
-          striker.vy = Math.sin(angle) * power;
-          shotActive = true;
-          shotResolved = false;
-          inputMode = 'wait';
-          playStrike(power);
-        } else {
-          aiPreview = {
-            x1: striker.x, y1: striker.y,
-            x2: best.strikeX, y2: best.strikeY,
-            tx: best.coin.x, ty: best.coin.y
-          };
-          updateHUD();
-          setTimeout(() => {
-            aiPreview = null;
-            const dx = best.strikeX - striker.x;
-            const dy = best.strikeY - striker.y;
-            const mag = Math.hypot(dx, dy);
-            const power = clamp(mag * 0.05, 6, MAX_POWER);
-            striker.vx = (dx / mag) * power;
-            striker.vy = (dy / mag) * power;
-            shotActive = true;
-            shotResolved = false;
-            inputMode = 'wait';
-            playStrike(power);
-          }, 900);
-        }
-      }
-
-      // ---- Rendering ----
-      function drawShadow(obj, r, alpha) {
-        alpha = alpha === undefined ? 0.35 : alpha;
-        const off = r * 0.45;
-        const g = ctx.createRadialGradient(obj.x + off, obj.y + off, r * 0.2, obj.x + off, obj.y + off, r * 1.3);
-        g.addColorStop(0, `rgba(0,0,0,${alpha})`);
-        g.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.save();
-        ctx.fillStyle = g;
-        ctx.beginPath();
-        ctx.ellipse(obj.x + off, obj.y + off, r * 1.15, r * 0.9, 0, 0, TWO_PI);
-        ctx.fill();
-        ctx.restore();
-      }
-
-      function drawPocket(p) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, POCKET_RADIUS, 0, TWO_PI);
-        ctx.fillStyle = '#0a0705';
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(230, 190, 110, 0.45)';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-        ctx.strokeStyle = 'rgba(255,255,255,0.10)';
-        ctx.lineWidth = 1;
-        for (let r = 6; r < POCKET_RADIUS - 2; r += 6) {
-          ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, TWO_PI); ctx.stroke();
-        }
-        for (let a = 0; a < TWO_PI; a += Math.PI / 6) {
-          ctx.beginPath();
-          ctx.moveTo(p.x + Math.cos(a) * 5, p.y + Math.sin(a) * 5);
-          ctx.lineTo(p.x + Math.cos(a) * (POCKET_RADIUS - 2), p.y + Math.sin(a) * (POCKET_RADIUS - 2));
-          ctx.stroke();
-        }
-        ctx.restore();
-      }
-
-      function drawBoard() {
-        ctx.fillStyle = woodPattern;
-        ctx.fillRect(0, 0, SIZE, SIZE);
-        ctx.fillStyle = 'rgba(160, 120, 75, 0.18)';
-        ctx.fillRect(MARGIN, MARGIN, SIZE - MARGIN * 2, SIZE - MARGIN * 2);
-
-        ctx.save();
-        ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 18;
-        ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 8;
-        ctx.strokeRect(MARGIN + 4, MARGIN + 4, SIZE - MARGIN * 2 - 8, SIZE - MARGIN * 2 - 8);
-        ctx.restore();
-
-        const frameGrad = ctx.createLinearGradient(MARGIN, MARGIN, SIZE - MARGIN, SIZE - MARGIN);
-        frameGrad.addColorStop(0, '#d4a86a'); frameGrad.addColorStop(0.5, '#b08b5c'); frameGrad.addColorStop(1, '#d4a86a');
-        ctx.strokeStyle = frameGrad; ctx.lineWidth = 10;
-        ctx.strokeRect(MARGIN, MARGIN, SIZE - MARGIN * 2, SIZE - MARGIN * 2);
-
-        ctx.strokeStyle = 'rgba(255, 235, 180, 0.16)'; ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(SIZE / 2, MARGIN + 6); ctx.lineTo(SIZE / 2, SIZE - MARGIN - 6);
-        ctx.moveTo(MARGIN + 6, SIZE / 2); ctx.lineTo(SIZE - MARGIN - 6, SIZE / 2);
-        ctx.stroke();
-        ctx.beginPath(); ctx.arc(SIZE / 2, SIZE / 2, 60, 0, TWO_PI); ctx.stroke();
-        ctx.beginPath(); ctx.arc(SIZE / 2, SIZE / 2, 6, 0, TWO_PI);
-        ctx.fillStyle = 'rgba(255, 235, 180, 0.35)'; ctx.fill();
-
-        const baseInset = MARGIN + 80;
-        ctx.strokeStyle = 'rgba(255, 235, 180, 0.22)'; ctx.lineWidth = 3;
-        ctx.beginPath(); ctx.moveTo(baseInset, baselineY('p1')); ctx.lineTo(SIZE - baseInset, baselineY('p1')); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(baseInset, baselineY('p2')); ctx.lineTo(SIZE - baseInset, baselineY('p2')); ctx.stroke();
-
-        [baselineY('p1'), baselineY('p2')].forEach(y => {
-          [baseInset, SIZE - baseInset].forEach(x => {
-            ctx.beginPath(); ctx.arc(x, y, 4, 0, TWO_PI); ctx.fillStyle = 'rgba(220, 60, 60, 0.85)'; ctx.fill();
-          });
-        });
-
-        POCKETS.forEach(drawPocket);
-      }
-
-      function drawCoin(c) {
-        drawShadow(c, c.r, 0.32);
-        const g = ctx.createRadialGradient(c.x - c.r * 0.3, c.y - c.r * 0.35, c.r * 0.1, c.x, c.y, c.r);
-        if (c.color === 'white') {
-          g.addColorStop(0, COLORS.white); g.addColorStop(0.55, COLORS.whiteDark); g.addColorStop(1, '#a99d87');
-        } else if (c.color === 'black') {
-          g.addColorStop(0, '#4a4a4a'); g.addColorStop(0.55, COLORS.black); g.addColorStop(1, COLORS.blackDark);
-        } else {
-          g.addColorStop(0, '#ff6b6b'); g.addColorStop(0.55, COLORS.red); g.addColorStop(1, COLORS.redDark);
-        }
-        ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, TWO_PI); ctx.fillStyle = g; ctx.fill();
-        ctx.beginPath(); ctx.arc(c.x, c.y, c.r * 0.78, 0, TWO_PI);
-        ctx.lineWidth = 2.5;
-        ctx.strokeStyle = c.color === 'white' ? COLORS.whiteRim : (c.color === 'black' ? COLORS.blackRim : COLORS.redRim);
-        ctx.stroke();
-        ctx.beginPath(); ctx.arc(c.x, c.y, c.r - 1, 0, TWO_PI); ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth = 1; ctx.stroke();
-        if (c.color === 'red') {
-          ctx.save(); ctx.translate(c.x, c.y);
-          ctx.fillStyle = '#ffd700';
-          ctx.beginPath();
-          ctx.moveTo(-c.r * 0.4, c.r * 0.15);
-          ctx.lineTo(-c.r * 0.25, -c.r * 0.2);
-          ctx.lineTo(-c.r * 0.08, -c.r * 0.05);
-          ctx.lineTo(c.r * 0.08, -c.r * 0.2);
-          ctx.lineTo(c.r * 0.25, -c.r * 0.05);
-          ctx.lineTo(c.r * 0.4, c.r * 0.15);
-          ctx.closePath(); ctx.fill();
-          ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 0.8; ctx.stroke();
-          ctx.restore();
-        }
-        ctx.save();
-        ctx.beginPath();
-        ctx.ellipse(c.x - c.r * 0.3, c.y - c.r * 0.35, c.r * 0.35, c.r * 0.2, -0.5, 0, TWO_PI);
-        ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.fill();
-        ctx.restore();
-      }
-
-      function drawStriker() {
-        drawShadow(striker, striker.r, 0.42);
-        const g = ctx.createRadialGradient(striker.x - striker.r * 0.3, striker.y - striker.r * 0.35, striker.r * 0.1, striker.x, striker.y, striker.r);
-        g.addColorStop(0, COLORS.striker); g.addColorStop(0.35, '#d8dbe6'); g.addColorStop(0.75, COLORS.strikerDark); g.addColorStop(1, '#3a3f4d');
-        ctx.beginPath(); ctx.arc(striker.x, striker.y, striker.r, 0, TWO_PI); ctx.fillStyle = g; ctx.fill();
-        ctx.beginPath(); ctx.arc(striker.x, striker.y, striker.r, 0, TWO_PI);
-        const rim = ctx.createLinearGradient(striker.x - striker.r, striker.y - striker.r, striker.x + striker.r, striker.y + striker.r);
-        rim.addColorStop(0, '#fff2b8'); rim.addColorStop(0.5, '#e5b84c'); rim.addColorStop(1, '#8b6118');
-        ctx.strokeStyle = rim; ctx.lineWidth = 3.5; ctx.stroke();
-        ctx.beginPath(); ctx.arc(striker.x, striker.y, striker.r * 0.65, 0, TWO_PI); ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1.5; ctx.stroke();
-        ctx.beginPath(); ctx.arc(striker.x, striker.y, striker.r * 0.35, 0, TWO_PI); ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1.5; ctx.stroke();
-        ctx.save();
-        ctx.beginPath();
-        ctx.ellipse(striker.x - striker.r * 0.3, striker.y - striker.r * 0.35, striker.r * 0.4, striker.r * 0.22, -0.5, 0, TWO_PI);
-        ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.fill();
-        ctx.restore();
-      }
-
-      function drawAim() {
-        if (inputMode !== 'aim' || !aimStart || !aimEnd) return;
-        const dx = aimStart.x - aimEnd.x;
-        const dy = aimStart.y - aimEnd.y;
-        const angle = Math.atan2(dy, dx);
-        const rawPower = Math.hypot(dx, dy) * 0.12;
-        const power = Math.min(rawPower, MAX_POWER);
-        const len = power * 18;
-        const tipX = striker.x + Math.cos(angle) * len;
-        const tipY = striker.y + Math.sin(angle) * len;
-
-        ctx.save();
-        ctx.shadowColor = 'rgba(229, 184, 76, 0.7)'; ctx.shadowBlur = 14;
-        const grad = ctx.createLinearGradient(striker.x, striker.y, tipX, tipY);
-        grad.addColorStop(0, 'rgba(229, 184, 76, 0.9)'); grad.addColorStop(1, 'rgba(255, 94, 94, 0.85)');
-        ctx.strokeStyle = grad; ctx.lineWidth = 5; ctx.lineCap = 'round';
-        ctx.setLineDash([18, 10]);
-        ctx.beginPath(); ctx.moveTo(striker.x, striker.y); ctx.lineTo(tipX, tipY); ctx.stroke();
-        ctx.setLineDash([]); ctx.shadowBlur = 0;
-        ctx.beginPath(); ctx.arc(tipX, tipY, 7, 0, TWO_PI);
-        ctx.fillStyle = power > MAX_POWER * 0.75 ? '#ff5e5e' : '#e5b84c'; ctx.fill();
-        ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 1.5; ctx.stroke();
-        const arcStart = Math.PI * 0.65;
-        const powerFrac = power / MAX_POWER;
-        ctx.beginPath(); ctx.arc(striker.x, striker.y, striker.r + 10, arcStart, arcStart + (Math.PI * 1.7) * powerFrac);
-        ctx.strokeStyle = `hsl(${40 - powerFrac * 40}, 100%, ${55 + powerFrac * 15}%)`; ctx.lineWidth = 3; ctx.stroke();
-        ctx.globalAlpha = 0.25;
-        ctx.beginPath(); ctx.arc(tipX, tipY, striker.r, 0, TWO_PI); ctx.fillStyle = '#f8f8fc'; ctx.fill();
-        ctx.globalAlpha = 1;
-        ctx.restore();
-      }
-
-      function drawAiPreview() {
-        if (!aiPreview) return;
-        ctx.save();
-        ctx.strokeStyle = 'rgba(255, 94, 94, 0.85)'; ctx.lineWidth = 4; ctx.setLineDash([14, 10]); ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(aiPreview.x1, aiPreview.y1); ctx.lineTo(aiPreview.x2, aiPreview.y2); ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.beginPath(); ctx.arc(aiPreview.x2, aiPreview.y2, 6, 0, TWO_PI); ctx.fillStyle = '#ff5e5e'; ctx.fill();
-        ctx.beginPath(); ctx.arc(aiPreview.tx, aiPreview.ty, STRIKER_RADIUS, 0, TWO_PI); ctx.strokeStyle = 'rgba(255, 94, 94, 0.5)'; ctx.lineWidth = 2; ctx.stroke();
-        ctx.restore();
-      }
-
-      function updateTrails() {
-        [striker, ...coins].forEach(b => {
-          if (!b.trail) b.trail = [];
-          const speed = Math.hypot(b.vx, b.vy);
-          if (speed > 3) { b.trail.push({ x: b.x, y: b.y }); if (b.trail.length > 14) b.trail.shift(); }
-          else if (b.trail.length > 0) b.trail.shift();
-        });
-      }
-
-      function drawTrails() {
-        [striker, ...coins].forEach(b => {
-          if (!b.trail || b.trail.length < 2) return;
-          ctx.save();
-          for (let i = 1; i < b.trail.length; i++) {
-            const a1 = b.trail[i - 1], a2 = b.trail[i];
-            const alpha = (i / b.trail.length) * 0.28;
-            ctx.beginPath(); ctx.moveTo(a1.x, a1.y); ctx.lineTo(a2.x, a2.y);
-            ctx.strokeStyle = `rgba(255, 235, 180, ${alpha})`; ctx.lineWidth = b.r * (0.45 + (i / b.trail.length) * 0.55);
-            ctx.lineCap = 'round'; ctx.stroke();
-          }
-          ctx.restore();
-        });
-      }
-
-      function spawnParticles(x, y, colorName, count) {
-        const palette = { gold: { r: 255, g: 220, b: 120 }, white: { r: 250, g: 245, b: 235 }, black: { r: 180, g: 180, b: 180 }, red: { r: 255, g: 80, b: 80 } };
-        const base = palette[colorName] || palette.gold;
-        for (let i = 0; i < count; i++) {
-          const angle = Math.random() * TWO_PI;
-          const speed = 1.5 + Math.random() * 5;
-          particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: 1, decay: 0.015 + Math.random() * 0.025, size: 1 + Math.random() * 3.5, color: base });
-        }
-      }
-
-      function updateParticles() {
-        for (let i = particles.length - 1; i >= 0; i--) {
-          const p = particles[i];
-          p.x += p.vx; p.y += p.vy;
-          p.vx *= 0.96; p.vy *= 0.96;
-          p.life -= p.decay;
-          if (p.life <= 0) particles.splice(i, 1);
-        }
-      }
-
-      function drawParticles() {
-        if (!particles.length) return;
-        ctx.save();
-        ctx.globalCompositeOperation = 'lighter';
-        particles.forEach(p => {
-          ctx.beginPath(); ctx.arc(p.x, p.y, p.size * p.life, 0, TWO_PI);
-          ctx.fillStyle = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${p.life})`; ctx.fill();
-        });
-        ctx.restore();
-      }
-
-      function updateHUD() {
-        document.getElementById('scoreP1').textContent = scores.p1;
-        document.getElementById('scoreP2').textContent = scores.p2;
-        const t = document.getElementById('turnText');
-        if (gameOver) { t.textContent = 'Game Over'; t.className = 'value'; }
-        else if (turn === 'p1') { t.textContent = gameMode === 'ai' ? 'Your Shot' : 'Player 1'; t.className = 'value turn-p1'; }
-        else { t.textContent = gameMode === 'ai' ? 'Computer' : 'Player 2'; t.className = 'value turn-p2'; }
-
-        const last = document.getElementById('lastShot');
-        last.textContent = lastShot.text;
-        last.style.color = lastShot.type === 'good' ? 'var(--success)' : (lastShot.type === 'bad' ? 'var(--danger)' : 'var(--muted-2)');
-
-        const instr = document.getElementById('instruction');
-        if (gameOver) { instr.textContent = ''; }
-        else if (turn === 'p2' && gameMode === 'ai') { instr.textContent = shotActive || settling ? 'Computer is shooting...' : 'Computer is thinking...'; }
-        else if (inputMode === 'place') { instr.textContent = 'Drag to place your striker along the baseline'; }
-        else if (inputMode === 'aim') { instr.textContent = 'Pull back to aim, release to shoot'; }
-        else { instr.textContent = ''; }
-
-        const setQueen = (id, side) => {
-          const el = document.getElementById(id);
-          if (!queenPocketedBy) {
-            el.innerHTML = '<span class="queen-dot"></span>On board';
-          } else if (queenPocketedBy === side) {
-            el.innerHTML = '<span class="queen-dot covered"></span>Cover next!';
-          } else {
-            el.innerHTML = '<span class="queen-dot lost"></span>Opponent cover';
-          }
-        };
-        setQueen('queenStatusP1', 'p1');
-        setQueen('queenStatusP2', 'p2');
-      }
-
-      function hideModal() { document.getElementById('endModal').classList.remove('show'); }
-
-      function draw() {
-        ctx.save();
-        if (shake > 0.1) {
-          ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
-          shake *= 0.9;
-        }
-        ctx.clearRect(0, 0, SIZE, SIZE);
-        drawBoard();
-        drawTrails();
-        coins.forEach(drawCoin);
-        drawStriker();
-        drawAim();
-        drawAiPreview();
-        drawParticles();
-        ctx.restore();
-      }
-
-      function loop(timestamp) {
-        if (!lastTime) lastTime = timestamp;
-        const frameTime = Math.min((timestamp - lastTime) / 1000, 0.05);
-        lastTime = timestamp;
-
-        if (gameOver) { draw(); rAFId = null; return; }
-
-        // AI timing
-        if (aiTimer > 0 && gameMode === 'ai' && turn === 'p2') {
-          aiTimer -= frameTime;
-          if (aiTimer <= 0) aiTakeShot();
-        }
-
-        accumulator += frameTime;
-        let steps = 0;
-        while (accumulator >= FIXED_DT && steps < SUB_STEPS) {
-          stepPhysics(FIXED_DT);
-          accumulator -= FIXED_DT;
-          steps++;
-        }
-        if (accumulator >= FIXED_DT) accumulator = FIXED_DT;
-
-        updateParticles();
-        updateTrails();
-
-        const moving = [striker, ...coins].some(b => Math.hypot(b.vx, b.vy) > 0.01);
-        if (shotActive && !moving && !shotResolved) {
-          if (!settling) { settling = true; settlingTimer = 0.25; }
-          else {
-            settlingTimer -= frameTime;
-            if (settlingTimer <= 0) {
-              settling = false;
-              shotActive = false;
-              finishShot();
-            }
-          }
-        }
-
-        updateHUD();
-        draw();
-        if (!gameOver) rAFId = requestAnimationFrame(loop);
-      }
-
-      rAFId = requestAnimationFrame(loop);
+      window.gameCommon.init();
     })();
   </script>
+  <script src="carrom/main.bundle.js"></script>
 </body>
 </html>
