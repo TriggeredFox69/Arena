@@ -81,8 +81,8 @@
             const confirmPassword = document.getElementById('confirmPassword').value;
             const terms = document.getElementById('terms').checked;
 
-            if (!username || !email || !phone || !password) {
-                api.showNotification('Please fill in all fields', 'error');
+            if (!username || !email || !password) {
+                api.showNotification('Please fill in all required fields', 'error');
                 return;
             }
 
