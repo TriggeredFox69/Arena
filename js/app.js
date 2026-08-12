@@ -19,6 +19,7 @@ class ArenaX {
         if (!localStorage.getItem(this.storageKey)) {
             this.resetData();
         }
+        // Always re-sync from arenax_user so Supabase balance edits are reflected
         this.syncFromSessionUser();
     }
 
@@ -444,6 +445,67 @@ class ArenaX {
     formatCurrency(amount) {
         return '₨' + amount.toLocaleString();
     }
+
+    /** Fetch live balance from Supabase users table via REST — works on ALL pages (no supabase-js needed). */
+    async fetchBalanceFromSupabase() {
+        try {
+            const cfg = window.ARENAX_SUPABASE_CONFIG || window.ARENAX_CONFIG || {};
+            const url = cfg.url || cfg.SUPABASE_URL;
+            const key = cfg.anonKey || cfg.SUPABASE_ANON_KEY;
+            if (!url || !key) return;
+
+            // Read Supabase auth session directly from localStorage (no library needed)
+            let session = null;
+            try {
+                const sbKey = Object.keys(localStorage).find(k => k.includes('arenax_sb_auth') || (k.includes('supabase') && k.includes('auth')));
+                if (sbKey) {
+                    const raw = JSON.parse(localStorage.getItem(sbKey) || 'null');
+                    session = raw?.currentSession || raw?.session || raw;
+                }
+            } catch(e) {}
+
+            if (!session?.access_token || !session?.user?.id) return;
+
+            const res = await fetch(
+                `${url}/rest/v1/users?id=eq.${session.user.id}&select=id,username,uid,balance,escrow_ax&limit=1`,
+                {
+                    headers: {
+                        'apikey': key,
+                        'Authorization': `Bearer ${session.access_token}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            if (!res.ok) return;
+            const rows = await res.json();
+            const data = rows?.[0];
+            if (!data) return;
+
+            const balance = Number(data.balance ?? 0);
+
+            // Update arenax_user
+            const u = JSON.parse(localStorage.getItem('arenax_user') || '{}');
+            u.id = data.id; u.uid = data.uid || data.id;
+            u.username = data.username || u.username;
+            u.coins = balance; u.balance = balance;
+            localStorage.setItem('arenax_user', JSON.stringify(u));
+
+            // Update arenax_data (what game-common.js reads via getBalance())
+            const appData = this.getData();
+            if (!appData.user) appData.user = {};
+            appData.coins = balance;
+            appData.user.coins = balance;
+            appData.user.balance = balance;
+            appData.user.username = data.username || appData.user.username || 'Player';
+            this.saveData(appData);
+
+            this.updateBalanceDisplay();
+            console.log('[arenaX] Balance synced from Supabase:', balance, 'AX');
+        } catch (e) {
+            console.warn('[arenaX] fetchBalanceFromSupabase failed:', e.message);
+        }
+    }
 }
 
 // Initialize ArenaX
@@ -452,9 +514,12 @@ const arenaX = new ArenaX();
 // Make it globally accessible
 window.arenaX = arenaX;
 
-// Update balance on page load
+// Update balance on page load — and fetch live balance from Supabase
 document.addEventListener('DOMContentLoaded', () => {
     arenaX.updateBalanceDisplay();
+
+    // Fetch real balance from Supabase users table (reflects edits made in Supabase dashboard)
+    arenaX.fetchBalanceFromSupabase();
 
     // Update user info if logged in
     if (arenaX.isLoggedIn()) {
