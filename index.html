@@ -3680,6 +3680,10 @@
         render();
         setInterval(tickAirdrop, 1000);
         setInterval(simulateLiveOrders, 3500);
+        // Sync real balance from Supabase users table (reflects edits made in Supabase dashboard)
+        if (typeof api !== 'undefined' && typeof api.syncBalanceFromSupabase === 'function') {
+          api.syncBalanceFromSupabase().then(() => render());
+        }
       } catch (err) {
         console.error('[initApp] Dashboard failed to start:', err);
         api.showNotification('Dashboard error: ' + (err && err.message ? err.message : 'unknown'), 'error');

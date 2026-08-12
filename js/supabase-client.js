@@ -12,13 +12,15 @@
   window.getSupabase = function getSupabase() {
     if (client) return client;
 
-    const cfg = window.ARENAX_CONFIG || {};
-    if (!window.supabase || !cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) {
-      console.warn('[supabase] not configured -- run `node scripts/inject-env.js`');
+    const cfg = window.ARENAX_SUPABASE_CONFIG || window.ARENAX_CONFIG || {};
+    const url = cfg.url || cfg.SUPABASE_URL;
+    const key = cfg.anonKey || cfg.SUPABASE_ANON_KEY;
+    if (!window.supabase || !url || !key) {
+      console.warn('[supabase] not configured -- check supabase-config.js');
       return null;
     }
 
-    client = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, {
+    client = window.supabase.createClient(url, key, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,

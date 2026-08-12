@@ -36,6 +36,40 @@ class ArenaXAPI {
         return this.user;
     }
 
+    /** Fetch live balance from Supabase users table and sync to localStorage/memory */
+    async syncBalanceFromSupabase() {
+        try {
+            const sb = typeof getSupabase === 'function' ? getSupabase() : null;
+            if (!sb) return;
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) return;
+
+            const { data, error } = await sb
+                .from('users')
+                .select('id, username, uid, balance, escrow_ax, ax_balance')
+                .eq('id', session.user.id)
+                .single();
+
+            if (error || !data) return;
+
+            const balance = data.balance ?? data.ax_balance ?? 0;
+            const u = this.user || JSON.parse(localStorage.getItem('arenax_user') || '{}');
+            u.id = data.id;
+            u.uid = data.uid || data.id;
+            u.username = data.username || u.username;
+            u.coins = balance;
+            u.balance = balance;
+            u.escrow = data.escrow_ax || 0;
+            this.user = u;
+            localStorage.setItem('arenax_user', JSON.stringify(u));
+
+            // Update any visible balance displays
+            if (typeof window.render === 'function') window.render();
+        } catch (e) {
+            console.warn('[api] syncBalanceFromSupabase failed:', e.message);
+        }
+    }
+
     async request(method, endpoint, body = null) {
         const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
         const options = {
