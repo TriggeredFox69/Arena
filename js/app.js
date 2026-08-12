@@ -32,16 +32,19 @@ class ArenaX {
             const data = this.getData();
             if (!data.user) data.user = {};
             data.user.username = sessionUser.username || sessionUser.name || data.user.username || 'Player';
-            data.user.email = sessionUser.email || data.user.email || '';
-            data.user.phone = sessionUser.phone || data.user.phone || '';
-            data.user.uid = sessionUser.uid || sessionUser.id || data.user.uid || '';
-            data.user.id = sessionUser.id || sessionUser.uid || data.user.id || '';
-            // Sync balance from session — do NOT override with a fixed value
+            data.user.email    = sessionUser.email    || data.user.email    || '';
+            data.user.phone    = sessionUser.phone    || data.user.phone    || '';
+            data.user.uid      = sessionUser.uid      || sessionUser.id     || data.user.uid || '';
+            data.user.id       = sessionUser.id       || sessionUser.uid    || data.user.id  || '';
+            // Always sync balance — fall back to 100 so games are playable even without Supabase
             const sessionCoins = Number(sessionUser.coins ?? sessionUser.balance ?? NaN);
-            if (!isNaN(sessionCoins)) {
+            if (!isNaN(sessionCoins) && sessionCoins > 0) {
                 data.coins = sessionCoins;
                 data.user.coins = sessionCoins;
                 data.user.balance = sessionCoins;
+            } else if (!data.coins || data.coins === 0) {
+                // Default starter balance so wager screen doesn't block immediately
+                data.coins = 100;
             }
             this.saveData(data);
         } catch (e) { /* corrupted session data — ignore */ }
