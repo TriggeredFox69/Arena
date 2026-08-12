@@ -26,10 +26,13 @@
       this.onResume = options.onResume || (() => {});
       this.onExit = options.onExit || (() => { window.location.href = '../index.html'; });
       this.onStart = options.onStart || (() => {});
+      this.onRematch = options.onRematch || null;
       this.rulesHTML = options.rulesHTML || this.defaultRules();
       this.timerSeconds = options.timerSeconds || 0; // 0 = match timer, per-turn handled by game
       this.turnTimeLimit = options.turnTimeLimit || 30;
       this.onTurnTimeout = options.onTurnTimeout || null;
+      this.autoWagerFlow = options.autoWagerFlow !== false; // default true
+      this._wagerCallback = null; // one-time callback for startWithWager
 
       this.wager = null;
       this.balanceBefore = 0;
@@ -166,12 +169,33 @@
     /* ---------- Wager flow ---------- */
     init() {
       this.updateBalanceDisplay();
+      if (this.autoWagerFlow) {
+        this.startWagerFlow();
+      } else {
+        this.updatePotDisplay();
+      }
+    }
+
+    startWagerFlow() {
       const wager = this.readWager();
       if (wager) {
         this.promptStart(wager);
       } else {
         this.showWagerEntry();
       }
+    }
+
+    // Online mode: the wager is set by the room/matchmaker, not the local overlay.
+    setOnlineWager(wager) {
+      this.wager = wager;
+      this.updatePotDisplay();
+      this.updateBalanceDisplay();
+    }
+
+    // Programmatic lock used by online mode. Calls onConfirmed with the lock result.
+    startWithWager(onConfirmed) {
+      this._wagerCallback = onConfirmed || null;
+      this.lockAndStart();
     }
 
     readWager() {
@@ -271,11 +295,20 @@
       const result = this.lockWager();
       if (!result) return;
       this.startGamePlay();
-      this.onStart(result);
+      if (this._wagerCallback) {
+        const cb = this._wagerCallback;
+        this._wagerCallback = null;
+        cb(result);
+      } else {
+        this.onStart(result);
+      }
     }
 
     lockWager() {
-      if (!window.arenaX) {
+      // Free play (offline AI/local): no wallet needed if wager is 0 or not set
+      const isFreePlay = this.wager === 0 || this.wager === null;
+
+      if (!window.arenaX && !isFreePlay) {
         this.setOverlayContent(`
           <h2>Wallet Not Loaded</h2>
           <p>Please make sure you are logged in and app.js is loaded.</p>
@@ -283,6 +316,13 @@
         `);
         this.showOverlay();
         return null;
+      }
+
+      if (isFreePlay) {
+        this.wager = 0;
+        this.updatePotDisplay();
+        this.hideOverlay();
+        return { success: true, balance: 0, wager: 0, freePlay: true };
       }
 
       const result = window.arenaX.startGame(this.gameName, this.wager);
@@ -574,7 +614,11 @@
       document.getElementById('gx-rematch-btn')?.addEventListener('click', () => {
         this.hideOverlay();
         this.paused = false;
-        window.location.reload();
+        if (typeof this.onRematch === 'function') {
+          this.onRematch();
+        } else {
+          window.location.reload();
+        }
       });
     }
 

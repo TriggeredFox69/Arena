@@ -71,12 +71,14 @@ class RoomLobby {
     this.update();
 
     // Listen for game invites
-    socketClient.on('game_invite', (data) => {
-      const accept = confirm(`${data.fromUsername} invited you to play ${data.gameKey}!\n\nRoom Code: ${data.roomCode}\n\nJoin now?`);
-      if (accept) {
-        this.joinRoomByCode(data.roomCode);
-      }
-    });
+    if (typeof socketClient !== 'undefined') {
+      socketClient.on('game_invite', (data) => {
+        const accept = confirm(`${data.fromUsername} invited you to play ${data.gameKey}!\n\nRoom Code: ${data.roomCode}\n\nJoin now?`);
+        if (accept) {
+          this.joinRoomByCode(data.roomCode);
+        }
+      });
+    }
   }
 
   update() {
@@ -89,22 +91,22 @@ class RoomLobby {
     const wager = parseInt(document.getElementById('room-wager')?.value || 0);
 
     if (!gameKey) {
-      arenaX.showNotification('Please select a game', 'error');
+      (window.arenaX || api).showNotification('Please select a game', 'error');
       return;
     }
 
     try {
-      const response = await api.post('/api/rooms/create', { gameKey, wager });
+      const response = await api.post('/rooms/create', { gameKey, wager });
 
       if (response.success && response.room) {
         const roomCode = response.room.room_code;
-        arenaX.showNotification(`Room created! Code: ${roomCode}`, 'success');
+        (window.arenaX || api).showNotification(`Room created! Code: ${roomCode}`, 'success');
 
         // Show share options
         const share = confirm(`Room Code: ${roomCode}\n\nCopy to clipboard?`);
         if (share) {
           navigator.clipboard.writeText(roomCode).then(() => {
-            arenaX.showNotification('Room code copied!', 'success');
+            (window.arenaX || api).showNotification('Room code copied!', 'success');
           });
         }
 
@@ -115,16 +117,19 @@ class RoomLobby {
             this.showInviteFriend(roomCode, gameKey);
           }
         }, 1000);
+      } else {
+        const errMsg = response.message || response.error || 'Failed to create room';
+        (window.arenaX || api).showNotification(errMsg, 'error');
       }
     } catch (err) {
-      arenaX.showNotification(err.message || 'Failed to create room', 'error');
+      (window.arenaX || api).showNotification(err.message || 'Failed to create room', 'error');
     }
   }
 
   joinRoom() {
     const roomCode = document.getElementById('room-code')?.value?.trim().toUpperCase();
     if (!roomCode) {
-      arenaX.showNotification('Please enter a room code', 'error');
+      (window.arenaX || api).showNotification('Please enter a room code', 'error');
       return;
     }
 
@@ -133,26 +138,38 @@ class RoomLobby {
 
   async joinRoomByCode(roomCode) {
     try {
-      const response = await api.post('/api/rooms/join', { roomCode });
+      const response = await api.post('/rooms/join', { roomCode });
 
       if (response.success && response.room) {
-        arenaX.showNotification('Joined room!', 'success');
+        (window.arenaX || api).showNotification('Joined room!', 'success');
 
         // Launch the game
         setTimeout(() => {
-          arenaX.launchGame(response.room.game_key, 'pvp', response.room.wager);
+          const ax = window.arenaX;
+          if (ax && ax.launchGame) {
+            ax.launchGame(response.room.game_key, 'pvp', response.room.wager);
+          } else {
+            // Fallback: navigate to the game page
+            const gamePage = response.room.game_key === '8ball-pool' ? '8ball-pool' :
+                             response.room.game_key === 'glowhockey' ? 'Glow-hockey' :
+                             response.room.game_key;
+            window.location.href = `games/${gamePage}.html?room=${roomCode}`;
+          }
         }, 500);
+      } else {
+        const errMsg = response.message || response.error || 'Failed to join room';
+        (window.arenaX || api).showNotification(errMsg, 'error');
       }
     } catch (err) {
-      arenaX.showNotification(err.message || 'Failed to join room', 'error');
+      (window.arenaX || api).showNotification(err.message || 'Failed to join room', 'error');
     }
   }
 
   showInviteFriend(roomCode, gameKey) {
-    const friends = store.getState().friends.filter(f => f.online);
+    const friends = typeof store !== 'undefined' ? store.getState().friends.filter(f => f.online) : [];
 
     if (friends.length === 0) {
-      arenaX.showNotification('No online friends to invite', 'info');
+      (window.arenaX || api).showNotification('No online friends to invite', 'info');
       return;
     }
 
@@ -162,8 +179,10 @@ class RoomLobby {
     if (choice && !isNaN(choice)) {
       const index = parseInt(choice) - 1;
       if (friends[index]) {
-        socketClient.sendGameInvite(friends[index].id, roomCode, gameKey);
-        arenaX.showNotification(`Invite sent to ${friends[index].username}!`, 'success');
+        if (typeof socketClient !== 'undefined') {
+          socketClient.sendGameInvite(friends[index].id, roomCode, gameKey);
+        }
+        (window.arenaX || api).showNotification(`Invite sent to ${friends[index].username}!`, 'success');
       }
     }
   }

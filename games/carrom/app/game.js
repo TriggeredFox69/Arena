@@ -37,6 +37,7 @@ export class CarromGame {
     this.aiTimer = 0;
     this.aiTimeouts = [];
     this.lastStateChange = 0;
+    this.myPlayerNumber = 1;
 
     this._onResize = this.resize.bind(this);
     this._onPointerDown = this._handlePointerDown.bind(this);
@@ -106,7 +107,7 @@ export class CarromGame {
       wager: this.options.wager || this.state.options?.wager || 0,
     };
     this.state.phase = PHASE.PLACE_STRIKER;
-    this.state.inputEnabled = (this.state.mode === GAME_MODE.LOCAL) || (this.state.turn === TURN.P1);
+    this.state.inputEnabled = (this.state.mode === GAME_MODE.LOCAL) || (this.state.mode === GAME_MODE.PVP) || (this.state.turn === TURN.P1);
     this.state.aiThinking = false;
     this.state.aiPreview = null;
     this.state.dragStart = null;
@@ -127,6 +128,27 @@ export class CarromGame {
       wager: this.options.wager || clean.options?.wager || 0,
     };
     return clean;
+  }
+
+  setPlayerNumber(n) {
+    this.myPlayerNumber = n === 2 ? 2 : 1;
+  }
+
+  placeStriker(x, y) {
+    if (!this.state || this.state.phase !== PHASE.PLACE_STRIKER) return;
+    const baselineY = baselineFor(this.state.turn);
+    const minX = MARGIN + STRIKER_R + 3;
+    const maxX = BOARD_SIZE - MARGIN - STRIKER_R - 3;
+    let sx = Math.max(minX, Math.min(maxX, x));
+    sx = findClearStrikerX(baselineY, this.state.coins, sx);
+    this.state.striker.x = sx;
+    this.state.striker.y = baselineY;
+    this.state.striker.vx = 0;
+    this.state.striker.vy = 0;
+  }
+
+  shoot(vx, vy, powerRatio) {
+    this._shoot(vx, vy, powerRatio);
   }
 
   destroy() {
@@ -216,10 +238,10 @@ export class CarromGame {
   }
 
   _canInteract() {
-    return this.state &&
-      this.state.phase !== PHASE.GAME_OVER &&
-      this.state.inputEnabled &&
-      !this.state.aiThinking;
+    if (!this.state || this.state.phase === PHASE.GAME_OVER || !this.state.inputEnabled || this.state.aiThinking) return false;
+    if (this.state.mode === GAME_MODE.LOCAL || this.state.mode === GAME_MODE.AI) return true;
+    const myTurn = this.myPlayerNumber === 2 ? TURN.P2 : TURN.P1;
+    return this.state.turn === myTurn;
   }
 
   _canvasPos(e) {
@@ -291,6 +313,10 @@ export class CarromGame {
     this.state.striker.y = baselineY;
     this.state.striker.vx = 0;
     this.state.striker.vy = 0;
+
+    if (typeof this.options.onStrikerPlace === 'function') {
+      this.options.onStrikerPlace({ x: this.state.striker.x, y: this.state.striker.y });
+    }
   }
 
   _shoot(vx, vy, powerRatio) {
@@ -308,6 +334,15 @@ export class CarromGame {
     this.sim = new Simulation(this.state);
     this.eventIndex = 0;
     this.audio.playStrikerHit(powerRatio || 0.5);
+
+    if (typeof this.options.onShoot === 'function') {
+      this.options.onShoot({
+        strikerX: this.state.striker.x,
+        strikerY: this.state.striker.y,
+        vx, vy,
+        power: powerRatio || Math.hypot(vx, vy) / 340
+      });
+    }
   }
 
   // ---- AI ----
@@ -413,11 +448,21 @@ export class CarromGame {
 
     this._resetStrikerForTurn();
     this.state.phase = PHASE.PLACE_STRIKER;
-    this.state.inputEnabled = (this.state.mode === GAME_MODE.LOCAL) || (this.state.turn === TURN.P1);
+    this.state.inputEnabled = (this.state.mode === GAME_MODE.LOCAL) || (this.state.mode === GAME_MODE.PVP) || (this.state.turn === TURN.P1);
     this.state.aiThinking = false;
     this.state.dragStart = null;
     this.state.dragCurrent = null;
     this._emitStateChangeThrottled();
+
+    // Online: the shooter is authoritative for its own shot's outcome (the
+    // same rule 8-ball pool uses). Once physics has settled and the turn patch
+    // is applied, hand the result to the online layer so it can push an
+    // authoritative snapshot to the peer — float physics can drift between
+    // machines, so the peer replaces its own simulated result with this
+    // instead of trusting its re-simulation.
+    if (typeof this.options.onShotResolved === 'function') {
+      this.options.onShotResolved({ turn: this.state.turn, result: patch.result });
+    }
   }
 
   _resetStrikerForTurn() {

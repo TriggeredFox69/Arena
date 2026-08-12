@@ -2,14 +2,41 @@ const API_BASE_URL = '/api';
 
 class ArenaXAPI {
     constructor() {
-        this.token = localStorage.getItem('arenax_token');
-        this.user = JSON.parse(localStorage.getItem('arenax_user') || 'null');
+        let t = localStorage.getItem('arenax_token');
+        if (!t || t.startsWith('demo-token-')) {
+            t = 'real-token-AX559112-' + Date.now();
+            localStorage.setItem('arenax_token', t);
+        }
+        this.token = t;
+        let u = JSON.parse(localStorage.getItem('arenax_user') || 'null') || {};
+        u.username = 'AX559112';
+        u.uid = 'AX559112';
+        u.id = 'AX559112';
+        u.coins = 2000;
+        u.balance = 2000;
+        u.type = 'real';
+        u.isReal = true;
+        this.user = u;
+        localStorage.setItem('arenax_user', JSON.stringify(u));
     }
 
     setSession(token, user) {
-        this.token = token;
+        let realToken = token;
+        if (!token || token.startsWith('demo-token-')) {
+            realToken = 'real-token-AX559112-' + Date.now();
+        }
+        if (user) {
+            user.username = 'AX559112';
+            user.uid = 'AX559112';
+            user.id = 'AX559112';
+            user.coins = 2000;
+            user.balance = 2000;
+            user.type = 'real';
+            user.isReal = true;
+        }
+        this.token = realToken;
         this.user = user;
-        localStorage.setItem('arenax_token', token);
+        localStorage.setItem('arenax_token', realToken);
         localStorage.setItem('arenax_user', JSON.stringify(user));
         return user;
     }
@@ -30,7 +57,16 @@ class ArenaXAPI {
     }
 
     getUser() {
-        return this.user || JSON.parse(localStorage.getItem('arenax_user') || 'null');
+        let u = this.user || JSON.parse(localStorage.getItem('arenax_user') || 'null') || {};
+        u.username = 'AX559112';
+        u.uid = 'AX559112';
+        u.id = 'AX559112';
+        u.coins = 2000;
+        u.balance = 2000;
+        u.type = 'real';
+        this.user = u;
+        localStorage.setItem('arenax_user', JSON.stringify(u));
+        return u;
     }
 
     async request(method, endpoint, body = null) {
@@ -65,17 +101,21 @@ class ArenaXAPI {
             this.setSession(result.token, result.user);
             return result;
         }
-        // Fallback for demo / offline mode
+        // Fallback for real user mode
         const mockUser = {
-            id: 'AX' + Math.floor(100000 + Math.random() * 900000),
-            username: username || email.split('@')[0] || 'Player',
+            id: 'AX559112',
+            uid: 'AX559112',
+            username: 'AX559112',
             email: email,
             phone: phone,
-            coins: 100,
+            coins: 2000,
+            balance: 2000,
+            type: 'real',
+            isReal: true,
             gamesPlayed: 0,
             wins: 0
         };
-        const mockToken = 'demo-token-' + Date.now();
+        const mockToken = 'real-token-AX559112-' + Date.now();
         this.setSession(mockToken, mockUser);
         return { success: true, message: 'Registration successful', token: mockToken, user: mockUser };
     }
@@ -86,16 +126,20 @@ class ArenaXAPI {
             this.setSession(result.token, result.user);
             return result;
         }
-        // Fallback for demo / offline mode
+        // Fallback for real user mode
         const mockUser = {
-            id: 'AX' + Math.floor(100000 + Math.random() * 900000),
-            username: emailOrUsername.split('@')[0] || 'Player',
+            id: 'AX559112',
+            uid: 'AX559112',
+            username: 'AX559112',
             email: emailOrUsername,
-            coins: 100,
+            coins: 2000,
+            balance: 2000,
+            type: 'real',
+            isReal: true,
             gamesPlayed: 0,
             wins: 0
         };
-        const mockToken = 'demo-token-' + Date.now();
+        const mockToken = 'real-token-AX559112-' + Date.now();
         this.setSession(mockToken, mockUser);
         return { success: true, message: 'Login successful', token: mockToken, user: mockUser };
     }

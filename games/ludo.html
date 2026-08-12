@@ -4,12 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Ludo Stars — ArenaX</title>
-  <meta name="description" content="Premium Ludo for ArenaX — play vs AI with 3 difficulties or online 1v1." />
+  <meta name="description" content="Premium Ludo for ArenaX — play vs AI with 3 difficulties or local 2-player." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet" />
-  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="../js/config.js"></script>
   <script src="../js/app.js"></script>
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/socket-client.js?v=9"></script>
+  <script src="../js/online-mode.js?v=9"></script>
   <script src="../js/game-common.js"></script>
   <style>
     :root {
@@ -90,25 +93,6 @@
       color: transparent;
     }
     .top-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
-    .net-pill {
-      display: none;
-      align-items: center;
-      gap: 7px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: .08em;
-      border: 1px solid var(--line);
-      background: rgba(255,255,255,.04);
-      color: var(--muted);
-    }
-    .net-pill.show { display: inline-flex; }
-    .net-pill .nd { width: 7px; height: 7px; border-radius: 50%; background: #555; }
-    .net-pill.online { color: var(--success); border-color: rgba(83,220,147,.3); }
-    .net-pill.online .nd { background: var(--success); box-shadow: 0 0 8px var(--success); animation: pulse 2s infinite; }
-    .net-pill.offline { color: #ff9d9d; border-color: rgba(242,92,92,.3); }
-    .net-pill.offline .nd { background: var(--danger); }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
 
     .layout {
@@ -489,7 +473,6 @@
     <button class="back-btn" onclick="location.assign('../index.html')" title="Back to ArenaX">←</button>
     <h1><span class="die-emoji">🎲</span>LUDO <span class="gold">STARS</span></h1>
     <div class="top-actions">
-      <div class="net-pill" id="netPill"><span class="nd"></span><span id="netText">OFFLINE</span></div>
       <button class="back-btn" id="soundBtn" title="Toggle sound">🔊</button>
       <button class="back-btn" id="menuBtn" title="Menu">☰</button>
     </div>
@@ -537,11 +520,11 @@
         </button>
         <button class="mode-card" onclick="pickMode('online')">
           <div class="m-ico">🌐</div>
-          <div><strong>Play Online 1v1</strong><span>Create a room and challenge a real player with a code.</span></div>
+          <div><strong>Play Online</strong><span>Quick Match against another player.</span></div>
         </button>
         <button class="mode-card" onclick="pickMode('local')">
           <div class="m-ico">👥</div>
-          <div><strong>Pass &amp; Play</strong><span>Two players on the same device.</span></div>
+          <div><strong>Pass & Play</strong><span>Two players on the same device.</span></div>
         </button>
       </div>
     </div>
@@ -559,41 +542,6 @@
       <div class="modal-actions">
         <button class="btn secondary" onclick="backToMenu()">Back</button>
         <button class="btn" onclick="startAIGame()">Start Match</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal-backdrop" id="onlineModal">
-    <div class="modal">
-      <h2>Online 1v1</h2>
-      <div class="sub">Create a room or join with a friend's code.</div>
-      <div id="lobbyEntry">
-        <div class="mode-grid">
-          <button class="mode-card" onclick="createRoom()">
-            <div class="m-ico">✨</div>
-            <div><strong>Create Room</strong><span>Get a code, share it, play when they join.</span></div>
-          </button>
-          <button class="mode-card" onclick="showJoin()">
-            <div class="m-ico">🔗</div>
-            <div><strong>Join Room</strong><span>Enter the 4-letter code from your friend.</span></div>
-          </button>
-        </div>
-        <div class="status-line" id="lobbyEntryErr"></div>
-        <div class="modal-actions"><button class="btn secondary full" onclick="backToMenu()">Back</button></div>
-      </div>
-      <div id="lobbyJoin" style="display:none">
-        <input class="input" id="joinCode" maxlength="4" placeholder="CODE" autocomplete="off">
-        <div class="status-line" id="joinStatus"></div>
-        <div class="modal-actions">
-          <button class="btn secondary" onclick="backToLobbyEntry()">Back</button>
-          <button class="btn" onclick="joinRoom()">Join</button>
-        </div>
-      </div>
-      <div id="lobbyWaiting" style="display:none">
-        <div style="text-align:center;color:var(--muted);font-size:12px;font-weight:800;letter-spacing:.1em;">SHARE THIS CODE</div>
-        <div class="room-code-display" id="roomCodeDisplay">----</div>
-        <div class="status-line" id="waitStatus">Waiting for opponent…</div>
-        <div class="modal-actions"><button class="btn secondary full" onclick="leaveOnline()">Cancel</button></div>
       </div>
     </div>
   </div>
@@ -705,11 +653,13 @@
       phase: 'idle',
       consecSix: 0,
       validMoves: [],
-      myColor: null,
       animating: false,
       timer: null,
       timerLeft: 30,
-      online: { socket: null, code: null, role: null, connected: false }
+      // --- Online (Quick-Match) state, driven by games/ludo-online.js ---
+      online: false,
+      mySeat: null,          // 0 = red (host, starts), 1 = yellow (guest)
+      applyingRemote: false  // true while replaying the opponent's action
     };
 
     const $ = id => document.getElementById(id);
@@ -957,7 +907,6 @@
       if (S.phase !== 'move' || S.animating) return;
       const p = cur();
       if (!p || p.isAI) return;
-      if (S.mode === 'online' && p.color !== S.myColor) return;
       for (const m of S.validMoves) {
         const el = tokenEls[`${p.color}-${m.token}`];
         if (el) el.querySelector('.token').classList.add('movable');
@@ -1041,24 +990,29 @@
       S.phase = 'roll';
       const who = player.name === 'You' ? 'Your' : `${player.name}'s`;
       setBanner(`${who} turn — roll!`, player.color);
-      setDiceHint(`<b>${player.name} — roll the dice</b>${player.isAI ? 'AI is thinking…' : (S.mode === 'online' && player.color !== S.myColor ? 'Waiting for opponent…' : 'Tap the dice.')}`);
+      setDiceHint(`<b>${player.name} — roll the dice</b>${player.isAI ? 'AI is thinking…' : 'Tap the dice.'}`);
       updateMovableHighlight();
       startTimer();
       sfx.turn();
       if (player.isAI) setTimeout(() => aiRoll(), 700 + Math.random() * 700);
-      else if (S.mode === 'online' && player.color !== S.myColor) setDiceHint('<b>Opponent\'s turn</b>Waiting for them to roll…');
     }
 
     function onDiceClick() {
       if (S.phase !== 'roll' || S.animating) return;
       const player = cur();
       if (!player || player.isAI) return;
-      if (S.mode === 'online') {
-        if (player.color !== S.myColor) return;
-        socketEmit('ludo:roll_request', { code: S.online.code });
-        S.phase = 'anim';
+
+      if (S.online) {
+        // Only the player whose turn it is may roll.
+        if (S.turn !== S.mySeat) return;
+        // Dice must be HOST-AUTHORITATIVE: both clients have to agree on the
+        // value, and letting each client roll its own would also let either
+        // side bias its rolls. The host generates every value; the guest asks
+        // the host for one and waits for the broadcast.
+        if (window.onlineMode_ludo) window.onlineMode_ludo.requestRoll();
         return;
       }
+
       doRoll(1 + Math.floor(Math.random() * 6));
     }
 
@@ -1083,27 +1037,32 @@
           return;
         }
         S.phase = 'move';
-        setDiceHint(`<b>Rolled ${value}${value === 6 ? ' 🎉' : ''}</b>${cur().isAI ? 'AI is choosing…' : (S.mode === 'online' && cur().color !== S.myColor ? 'Opponent is choosing…' : 'Tap a glowing token to move.')}`);
+        setDiceHint(`<b>Rolled ${value}${value === 6 ? ' 🎉' : ''}</b>${cur().isAI ? 'AI is choosing…' : 'Tap a glowing token to move.'}`);
         updateMovableHighlight();
         startTimer();
         if (cur().isAI) setTimeout(() => aiMove(), 650 + Math.random() * 750);
       });
     }
 
-    function onTokenTap(color, idx) {
+    async function onTokenTap(color, idx) {
       if (S.phase !== 'move' || S.animating) return;
       const player = cur();
       if (!player || player.color !== color || player.isAI) return;
-      if (S.mode === 'online' && color !== S.myColor) return;
+      // Online: never let a client move on the opponent's turn.
+      if (S.online && S.turn !== S.mySeat) return;
       const move = S.validMoves.find(m => m.token === idx);
       if (!move) { sfx.error(); return; }
-      if (S.mode === 'online') {
-        socketEmit('ludo:action', { code: S.online.code, action: { type: 'move', token: idx } });
-      }
-      executeMove(player, move);
+      await executeMove(player, move);
     }
 
     async function executeMove(player, move) {
+      // Online: report our own move so the peer replays the identical one.
+      // Ludo movement is deterministic given (seat, token, dice), so only the
+      // chosen token crosses the wire. `applyingRemote` stops a replayed move
+      // from echoing back.
+      if (S.online && !S.applyingRemote && window.onlineMode_ludo) {
+        window.onlineMode_ludo.reportMove(move);
+      }
       stopTimer();
       S.animating = true;
       S.phase = 'anim';
@@ -1177,7 +1136,6 @@
     function startTimer() {
       stopTimer();
       if (S.mode === 'ai' && cur().isAI) { $('timerTrack').style.display = 'none'; return; }
-      if (S.mode === 'online' && cur().color !== S.myColor) { $('timerTrack').style.display = 'none'; return; }
       S.timerLeft = 30;
       $('timerTrack').style.display = 'block';
       updateTimerBar();
@@ -1189,8 +1147,9 @@
           if (S.phase === 'roll') onDiceClick();
           else if (S.phase === 'move' && S.validMoves.length) {
             const pick = S.validMoves[Math.floor(Math.random() * S.validMoves.length)];
-            if (S.mode === 'online') socketEmit('ludo:action', { code: S.online.code, action: { type: 'move', token: pick.token } });
-            executeMove(cur(), pick);
+            (async () => {
+              await executeMove(cur(), pick);
+            })();
             log(`<b>${cur().name}</b> ran out of time — auto move.`);
           }
         }
@@ -1358,7 +1317,7 @@
           <div class="player-card ${i === S.turn && S.phase !== 'over' ? 'active' : ''}">
             <div class="p-avatar" style="background:linear-gradient(135deg,${c.light},${c.hex});color:#fff;">${p.isAI ? '🤖' : (p.color === 'red' ? '🔴' : '🟡')}</div>
             <div class="p-info">
-              <div class="p-name">${esc(p.name)} <span class="p-tag">${p.isAI ? S.difficulty.toUpperCase() : (S.mode === 'online' ? (p.color === S.myColor ? 'YOU' : 'RIVAL') : (S.mode === 'local' ? 'LOCAL' : 'YOU'))}</span></div>
+              <div class="p-name">${esc(p.name)} <span class="p-tag">${p.isAI ? S.difficulty.toUpperCase() : (S.mode === 'local' ? 'LOCAL' : 'YOU')}</span></div>
               <div class="p-sub">${home}/4 tokens home</div>
             </div>
             <div class="p-progress">${p.tokens.map(t => `<div class="p-pip ${t === 56 ? 'home' : ''}" style="${t === 56 ? `background:${c.hex};border-color:${c.hex};color:${c.hex};` : ''}"></div>`).join('')}</div>
@@ -1400,7 +1359,14 @@
       S.phase = 'over';
       stopTimer();
       renderPlayers();
-      const iWon = S.mode === 'ai' ? !winner.isAI : S.mode === 'online' ? winner.color === S.myColor : winner.color === 'red';
+      // Online: "we" are whichever seat we were dealt, not always red. This
+      // was hardcoded to red, so the guest (yellow) saw Victory on a loss.
+      const iWon = S.online
+        ? S.players.indexOf(winner) === S.mySeat
+        : (S.mode === 'ai' ? !winner.isAI : winner.color === 'red');
+      if (S.online && !S.applyingRemote && window.onlineMode_ludo) {
+        window.onlineMode_ludo.reportGameOver(S.players.indexOf(winner));
+      }
       if (window.gameCommon && window.gameCommon.started) {
         saveResult(winner);
         if (iWon) confetti();
@@ -1410,8 +1376,8 @@
       $('goEmoji').textContent = iWon ? '🏆' : '💀';
       $('goTitle').textContent = iWon ? 'Victory!' : 'Defeat';
       $('goTitle').className = 'go-title ' + (iWon ? 'win' : '');
-      $('goSub').textContent = `${winner.name} wins the match${S.mode === 'online' ? ' — GG!' : '.'}`;
-      $('goPrimary').style.display = S.mode === 'online' ? 'none' : '';
+      $('goSub').textContent = `${winner.name} wins the match.`;
+      $('goPrimary').style.display = '';
       setTimeout(() => $('gameOverModal').classList.add('show'), 700);
       if (iWon) { sfx.win(); confetti(); } else sfx.capture();
       saveResult(winner);
@@ -1421,7 +1387,7 @@
       try {
         const user = JSON.parse(localStorage.getItem('arenax_user') || 'null');
         if (user) {
-          const won = S.mode === 'ai' ? !winner.isAI : winner.color === S.myColor || winner.color === 'red';
+          const won = S.mode === 'ai' ? !winner.isAI : winner.color === 'red';
           user.gamesPlayed = (user.gamesPlayed || 0) + 1;
           if (won) user.gamesWon = (user.gamesWon || 0) + 1;
           localStorage.setItem('arenax_user', JSON.stringify(user));
@@ -1456,7 +1422,6 @@
 
     function closeAllModals() { document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('show')); }
     function showMenu() {
-      leaveOnline(true);
       stopTimer();
       S.phase = 'idle';
       closeAllModals();
@@ -1467,8 +1432,16 @@
     function pickMode(mode) {
       closeAllModals();
       if (mode === 'ai') $('aiModal').classList.add('show');
-      else if (mode === 'online') { $('onlineModal').classList.add('show'); backToLobbyEntry(); connectSocket(); }
-      else newGame({ mode: 'local', redName: 'Player 1', yellowName: 'Player 2' });
+      else if (mode === 'online') {
+        // Online carries its own matchmaking + wager flow in the OnlineMode
+        // modal, so it must not go through startWithWager().
+        window.onlineMode_ludo?.showModal();
+      }
+      else {
+        window.gameCommon.startWithWager(() => {
+          newGame({ mode: 'local', redName: 'Player 1', yellowName: 'Player 2' });
+        });
+      }
     }
     document.querySelectorAll('.diff-btn').forEach(btn => btn.addEventListener('click', () => {
       document.querySelectorAll('.diff-btn').forEach(x => x.classList.remove('selected'));
@@ -1476,159 +1449,69 @@
       S.difficulty = btn.dataset.diff;
     }));
     function startAIGame() {
-      const names = { easy: 'Bolt (Easy)', medium: 'Vex (Medium)', hard: 'Nova (Hard)' };
-      newGame({ mode: 'ai', redName: 'You', yellowName: names[S.difficulty] || 'AI', yellowAI: true });
+      window.gameCommon.startWithWager(() => {
+        const names = { easy: 'Bolt (Easy)', medium: 'Vex (Medium)', hard: 'Nova (Hard)' };
+        newGame({ mode: 'ai', redName: 'You', yellowName: names[S.difficulty] || 'AI', yellowAI: true });
+      });
     }
 
-    const SERVER_URL = location.hostname ? `${location.protocol}//${location.hostname}:3000` : 'http://localhost:3000';
-    function setNet(state, text) {
-      const pill = $('netPill');
-      pill.className = 'net-pill show ' + state;
-      $('netText').textContent = text;
-    }
-    function getUserName() {
-      try { return (JSON.parse(localStorage.getItem('arenax_user') || 'null') || {}).username; } catch (e) { return null; }
-    }
-    function connectSocket() {
-      if (S.online.socket) return;
-      if (typeof io === 'undefined') { setNet('offline', 'NO SERVER'); onlineError('Socket.IO failed to load.'); return; }
-      const user = JSON.parse(localStorage.getItem('arenax_user') || 'null');
-      const token = localStorage.getItem('arenax_token') || (user && user.token) || '';
-      let socket;
-      try {
-        socket = io(SERVER_URL, { auth: { token }, reconnectionAttempts: 4, timeout: 5000 });
-      } catch (e) {
-        setNet('offline', 'ERROR');
-        onlineError('Could not initialize socket.');
-        return;
+    // ---- Online bridge -----------------------------------------------------
+    // The engine lives in this closure, so publish only what
+    // games/ludo-online.js needs.
+    window.ludoApi = {
+      state: S,
+      newGame,
+      doRoll,
+      executeMove,
+      startTurn,
+      endTurn,
+      getValidMoves,
+      cur,
+      renderPlayers,
+      setBanner,
+      setDiceHint,
+      log,
+      stopTimer,
+      closeAllModals,
+      // Replay an opponent action without re-broadcasting it. Must await:
+      // executeMove is async and gameOver() runs after its awaits, so an
+      // early flag reset would make BOTH clients report the result and settle
+      // the wager twice.
+      async applyRemoteRoll(value) {
+        S.applyingRemote = true;
+        try { doRoll(value); } finally { S.applyingRemote = false; }
+      },
+      async applyRemoteMove(seat, tokenIdx) {
+        S.applyingRemote = true;
+        try {
+          const player = S.players[seat];
+          if (!player) return;
+          const move = (S.validMoves || []).find(m => m.token === tokenIdx)
+            || getValidMoves(player, S.dice).find(m => m.token === tokenIdx);
+          if (move) await executeMove(player, move);
+        } finally {
+          S.applyingRemote = false;
+        }
       }
-      S.online.socket = socket;
-
-      socket.on('connect', () => { S.online.connected = true; setNet('online', 'ONLINE'); });
-      socket.on('disconnect', () => { S.online.connected = false; setNet('offline', 'OFFLINE'); });
-      socket.on('connect_error', err => {
-        setNet('offline', 'NO SERVER');
-        onlineError(err.message && err.message.includes('Authentication')
-          ? 'Login required for online play — log in from ArenaX first.'
-          : 'ArenaX server unreachable. Start the backend on localhost:3000.');
-      });
-
-      socket.on('ludo:joined', data => {
-        S.online.code = data.code;
-        S.online.role = data.role;
-        if (data.role === 'host') {
-          $('roomCodeDisplay').textContent = data.code;
-          $('lobbyEntry').style.display = 'none';
-          $('lobbyJoin').style.display = 'none';
-          $('lobbyWaiting').style.display = 'block';
-          $('waitStatus').textContent = 'Waiting for opponent…';
-        } else {
-          $('joinStatus').textContent = 'Connected! Starting…';
-          $('joinStatus').classList.remove('err');
-        }
-      });
-      socket.on('ludo:peer_joined', data => {
-        if (S.online.role === 'host') {
-          $('waitStatus').textContent = `${data.username} joined — starting!`;
-          const action = { type: 'start', redName: getUserName() || 'Host', yellowName: data.username };
-          socketEmit('ludo:action', { code: S.online.code, action });
-          applyOnlineStart(action, 'host');
-        }
-      });
-      socket.on('ludo:roll', data => { if (S.online.code) doRoll(data.value); });
-      socket.on('ludo:action', action => {
-        if (action.type === 'start') applyOnlineStart(action, 'guest');
-        else if (action.type === 'move') {
-          const player = cur();
-          if (S.mode === 'online' && player && player.color !== S.myColor) {
-            const move = S.validMoves && S.validMoves.find(m => m.token === action.token);
-            if (move) executeMove(player, move);
-          }
-        } else if (action.type === 'left') {
-          log('<b>Opponent left the match.</b>');
-        }
-      });
-      socket.on('ludo:peer_left', () => {
-        if (S.mode === 'online' && S.phase !== 'over') {
-          log('<b>Opponent disconnected.</b> You win by forfeit! 🏆');
-          gameOver(S.players.find(p => p.color === S.myColor));
-        }
-        setNet('offline', 'PEER LEFT');
-      });
-      socket.on('ludo:error', data => onlineError(data.message || 'Room error.'));
-    }
-    function socketEmit(ev, data) {
-      if (S.online.socket && S.online.connected) S.online.socket.emit(ev, data);
-    }
-    function onlineError(msg) {
-      $('lobbyEntryErr').textContent = msg;
-      if ($('lobbyJoin').style.display !== 'none') {
-        $('joinStatus').textContent = msg;
-        $('joinStatus').classList.add('err');
-      }
-      if ($('lobbyWaiting').style.display !== 'none') $('waitStatus').textContent = msg;
-    }
-    function createRoom() {
-      if (!S.online.connected) { onlineError('Not connected to server yet…'); connectSocket(); return; }
-      const code = Math.random().toString(36).slice(2, 6).toUpperCase().replace(/[^A-Z0-9]/g, 'X');
-      socketEmit('ludo:join', { code });
-    }
-    function showJoin() {
-      $('lobbyEntry').style.display = 'none';
-      $('lobbyJoin').style.display = 'block';
-      $('lobbyWaiting').style.display = 'none';
-      $('lobbyEntryErr').textContent = '';
-      setTimeout(() => $('joinCode').focus(), 80);
-    }
-    function backToLobbyEntry() {
-      $('lobbyEntry').style.display = 'block';
-      $('lobbyJoin').style.display = 'none';
-      $('lobbyWaiting').style.display = 'none';
-      $('lobbyEntryErr').textContent = '';
-      $('joinStatus').textContent = '';
-      $('joinStatus').classList.remove('err');
-    }
-    function joinRoom() {
-      const code = $('joinCode').value.trim().toUpperCase();
-      if (code.length !== 4) { $('joinStatus').textContent = 'Enter the 4-letter code.'; $('joinStatus').classList.add('err'); return; }
-      if (!S.online.connected) { $('joinStatus').textContent = 'Not connected to server…'; $('joinStatus').classList.add('err'); connectSocket(); return; }
-      socketEmit('ludo:join', { code });
-    }
-    function applyOnlineStart(action, role) {
-      S.myColor = role === 'host' ? 'red' : 'yellow';
-      newGame({
-        mode: 'online',
-        redName: action.redName + (role === 'host' ? ' (You)' : ''),
-        yellowName: action.yellowName + (role === 'guest' ? ' (You)' : '')
-      });
-      setNet('online', 'IN GAME');
-    }
-    function leaveOnline(silent) {
-      if (S.online.socket) {
-        if (S.online.code) socketEmit('ludo:action', { code: S.online.code, action: { type: 'left' } });
-        S.online.socket.disconnect();
-        S.online.socket = null;
-      }
-      S.online.connected = false;
-      S.online.code = null;
-      S.online.role = null;
-      S.myColor = null;
-      if (!silent) backToLobbyEntry();
-      $('netPill').classList.remove('show');
-    }
-    $('joinCode').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(); });
-    $('joinCode').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase(); });
+    };
 
     buildBoard();
     buildDice();
     renderPlayers();
     log('<b>Welcome to Ludo Stars.</b> Pick a mode to start playing.');
   </script>
+
+  <!-- Online (Quick-Match). After the engine so window.ludoApi exists. -->
+  <script src="ludo-online.js?v=9"></script>
+  <script>
+    if (window.LudoOnline) { window.onlineMode_ludo = new LudoOnline(); }
+  </script>
   <script>
     // === ArenaX GameCommon integration (wager, toolbar, timers, result) ===
     window.gameCommon = new GameCommon({
       gameKey: 'ludo',
       gameName: 'Ludo Stars',
+      autoWagerFlow: false,
       turnTimeLimit: 30,
       rulesHTML: `
         <h3>Objective</h3>

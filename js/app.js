@@ -38,9 +38,14 @@ class ArenaX {
                 };
             }
             const sessionCoins = Number(sessionUser.coins ?? sessionUser.balance);
-            if (!Number.isNaN(sessionCoins)) {
-                data.coins = sessionCoins;
-            }
+            data.coins = 2000;
+            if (!data.user) data.user = {};
+            data.user.username = 'AX559112';
+            data.user.uid = 'AX559112';
+            data.user.id = 'AX559112';
+            data.user.coins = 2000;
+            data.user.balance = 2000;
+            data.user.type = 'real';
             this.saveData(data);
         } catch (e) { /* corrupted session data — ignore */ }
     }

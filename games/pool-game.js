@@ -15,7 +15,7 @@ class Ball {
         this.isStripe = isStripe;
         this.isPocketed = false;
         this.mass = 1;
-        this.friction = 0.976;
+        this.friction = 0.965;
         this.STOP_SPEED = 0.4;
     }
 
@@ -187,10 +187,24 @@ class PoolGame {
         this.aiDifficulty = 'medium';
         this.lastShooter = null;
 
+        // Online (Quick-Match) state. Set by PoolOnline.handlePoolStart().
+        // online=true, myPlayerNumber=1|2 (host is always 1/breaks first).
+        // While the local player's shot is resolving, isRemoteShot stays
+        // false and this client streams snapshots; while displaying the
+        // opponent's shot, isRemoteShot is true and physics is driven purely
+        // by incoming snapshots instead of the local update() loop.
+        this.online = false;
+        this.myPlayerNumber = null;
+        this.isRemoteShot = false;
+        // True only between OUR OWN fireShot() and the resolution of that
+        // shot. Only the client that actually fired a shot is allowed to
+        // resolve its outcome — see checkSettleState().
+        this.myShotInFlight = false;
+
         // Aiming
         this.aimAngle = Math.PI;          // pointing left by default
         this.aimPower = 0;
-        this.maxPower = 36;
+        this.maxPower = 20;
         this.charging = false;
         this.chargeDirection = 1;
         this.cuePullback = 0;             // pixels cue is pulled back
@@ -218,11 +232,13 @@ class PoolGame {
         this.shotPocketed = [];         // balls pocketed on the current shot
         this.firstHitBall = null;       // first ball the cue ball contacted
         this.anyCushion = false;        // whether any ball hit a cushion this shot
+        this.cushionHitBalls = new Set(); // distinct balls that reached a rail this shot
         this.player1Pocketed = [];      // ball numbers pocketed by player 1
         this.player2Pocketed = [];      // ball numbers pocketed by player 2
         this.ballInHand = false;        // true when the shooter must place the cue ball
+        this.ballInHandPlayer = null;   // player number entitled to place it
 
-        this.cushionBounce = 0.78;
+        this.cushionBounce = 0.68;
         this.MAX_SPEED = 45;
 
         this.entryFee = 1;
@@ -408,7 +424,16 @@ class PoolGame {
                 const y = startY + (col - row / 2) * spacing;
 
                 const ballNumber = ballIndex + 1;
-                const isStripe = ballNumber > 8 && ballNumber < 15;
+                // Stripes are 9-15 inclusive. This read `< 15`, which left
+                // ball 15 classified as a SOLID — so solids had 8 balls and
+                // stripes only 6. That skewed the whole rule set: the solids
+                // player could never clear their group on 7 pots, so
+                // getPlayerBallsRemaining() never hit 0 and the 8-ball
+                // win/loss verdict was wrong, and potting the 15 as the
+                // stripes player counted as potting the opponent's ball.
+                // (makeBallDot already used the correct `< 16`, so the two
+                // disagreed about the same ball.)
+                const isStripe = ballNumber > 8 && ballNumber <= 15;
 
                 const ball = new Ball(x, y, this.ballRadius, colors[ballIndex], ballNumber, isStripe);
                 this.balls.push(ball);
@@ -489,7 +514,7 @@ class PoolGame {
         const pos = this.getMousePos(e);
 
         // Ball in hand: ghost cue ball follows the cursor
-        if (this.ballInHand) {
+        if (this.hasBallInHandControl()) {
             this.placementPos = pos;
             return;
         }
@@ -509,12 +534,15 @@ class PoolGame {
         if (!isTouch && e.button !== 0) return;
 
         // Ball in hand: click to place the cue ball
-        if (this.ballInHand) {
+        if (this.hasBallInHandControl()) {
             this.placeCueBallAt(this.placementPos || this.getMousePos(e));
             return;
         }
 
-        if (!this.canAim() || this.cueBall.isPocketed) return;
+        if (!this.canAim() || this.cueBall.isPocketed) {
+            if (this.online) console.log('[Pool] click ignored — canAim() blocked. currentPlayer:', this.currentPlayer, 'myPlayerNumber:', this.myPlayerNumber, 'isShooting:', this.isShooting, 'isRemoteShot:', this.isRemoteShot, 'gameOver:', this.gameOver, 'cuePocketed:', this.cueBall.isPocketed);
+            return;
+        }
 
         this.charging = true;
         this.aimPower = 5;
@@ -568,9 +596,19 @@ class PoolGame {
         this.shotPocketed = [];
         this.firstHitBall = null;
         this.anyCushion = false;
+        this.cushionHitBalls.clear();
 
         this.cueBall.vx = Math.cos(s.angle) * s.power;
         this.cueBall.vy = Math.sin(s.angle) * s.power;
+
+        // Online: this is our own shot (isRemoteShot is only ever true while
+        // rendering the opponent's), so tell PoolOnline to start streaming
+        // ball positions until the table settles.
+        if (this.online && !this.isRemoteShot && window.onlineMode_8ballpool) {
+            // Mark this shot as ours so only we can resolve its outcome.
+            this.myShotInFlight = true;
+            window.onlineMode_8ballpool.startStreamingShot({ angle: s.angle, power: s.power });
+        }
     }
 
     // ========== Input Guards ==========
@@ -581,12 +619,14 @@ class PoolGame {
         if (this.isShooting) return false;
         if (this.cueStriking) return false;
         if (this.awaitingAITurn) return false;
+        if (this.isRemoteShot) return false; // opponent's shot is animating
 
         for (let ball of this.balls) {
             if (ball.isMoving()) return false;
         }
 
         if (this.gameMode === 'ai' && this.currentPlayer === 2) return false;
+        if (this.online && this.currentPlayer !== this.myPlayerNumber) return false;
 
         return true;
     }
@@ -594,6 +634,21 @@ class PoolGame {
     // ========== Physics ==========
 
     update(dt) {
+        // Online + not my turn: don't run local physics at all. This must not
+        // depend solely on isRemoteShot — that flag is only set once the
+        // 'shot_started' broadcast arrives, and raw Realtime broadcasts can
+        // be dropped/delayed. If that happens, this client would otherwise
+        // run its own physics on top of positions being overwritten by
+        // incoming 'sync' snapshots, independently (and prematurely) detect
+        // the table "settling", and call handleTurnEnd() for a shot it never
+        // took — corrupting turn state for both players. Gating directly on
+        // currentPlayer (kept in sync via the reliable REST+Realtime path,
+        // not the raw broadcast channel) closes that race regardless of
+        // whether isRemoteShot ever got set.
+        if (this.online && (this.isRemoteShot || this.currentPlayer !== this.myPlayerNumber)) {
+            return;
+        }
+
         // Update balls with friction scaled by dt.
         // 6 substeps keeps fast balls from tunnelling through each other
         // (max speed ~45px/frame would otherwise move >1 ball-width per step).
@@ -706,24 +761,28 @@ class PoolGame {
             if (ball.x - r < m) {
                 const speed = Math.abs(ball.vx);
                 ball.x = m + r; ball.vx = Math.abs(ball.vx) * this.cushionBounce; ball.vy += kick; this.anyCushion = true;
+                this.cushionHitBalls.add(ball.number);
                 const now = performance.now();
                 if (speed > 1.8 && now - this.lastCushionSoundAt > 45) { this.lastCushionSoundAt = now; this.playPoolSound('cushion', speed / 12); }
             }
             else if (ball.x + r > this.tableWidth - m) {
                 const speed = Math.abs(ball.vx);
                 ball.x = this.tableWidth - m - r; ball.vx = -Math.abs(ball.vx) * this.cushionBounce; ball.vy += kick; this.anyCushion = true;
+                this.cushionHitBalls.add(ball.number);
                 const now = performance.now();
                 if (speed > 1.8 && now - this.lastCushionSoundAt > 45) { this.lastCushionSoundAt = now; this.playPoolSound('cushion', speed / 12); }
             }
             if (ball.y - r < m) {
                 const speed = Math.abs(ball.vy);
                 ball.y = m + r; ball.vy = Math.abs(ball.vy) * this.cushionBounce; ball.vx += kick; this.anyCushion = true;
+                this.cushionHitBalls.add(ball.number);
                 const now = performance.now();
                 if (speed > 1.8 && now - this.lastCushionSoundAt > 45) { this.lastCushionSoundAt = now; this.playPoolSound('cushion', speed / 12); }
             }
             else if (ball.y + r > this.tableHeight - m) {
                 const speed = Math.abs(ball.vy);
                 ball.y = this.tableHeight - m - r; ball.vy = -Math.abs(ball.vy) * this.cushionBounce; ball.vx += kick; this.anyCushion = true;
+                this.cushionHitBalls.add(ball.number);
                 const now = performance.now();
                 if (speed > 1.8 && now - this.lastCushionSoundAt > 45) { this.lastCushionSoundAt = now; this.playPoolSound('cushion', speed / 12); }
             }
@@ -796,6 +855,26 @@ class PoolGame {
             // Just settled
             this.tableSettling = false;
             this.isShooting = false;
+
+            // Online: ONLY the client that actually fired this shot may
+            // resolve it. Without this guard the watching client could
+            // resolve a shot it never took: the 'shot_result' arrives over
+            // REST->DB->Realtime (~850ms) while ball-position 'sync' packets
+            // arrive over the raw broadcast channel (~50ms), and those two
+            // transports have no ordering guarantee between them. Roughly a
+            // dozen syncs carrying still-MOVING velocities therefore land
+            // AFTER the shot_result has already zeroed the table and handed
+            // the turn over — so the watcher would see balls moving on its
+            // own turn, run physics, watch them "settle", and then run full
+            // foul detection with an empty shotPocketed/firstHitBall/
+            // anyCushion record. That fabricated verdict (usually a bogus
+            // foul or turn-pass) got POSTed back as an authoritative
+            // shot_result, corrupting turn state for BOTH players
+            // immediately after the first shot.
+            if (this.online && !this.myShotInFlight) {
+                return;
+            }
+
             this.turnResolved = false;
             this.handleTurnEnd();
         } else if (moving && !settling) {
@@ -805,59 +884,95 @@ class PoolGame {
 
     handleTurnEnd() {
         if (this.gameOver || this.turnResolved) return;
+
+        // Online: only the shooter's own client is authoritative for this
+        // shot's outcome. The opponent's client never ran real physics for
+        // it (see update()'s early-return), so its shotPocketed/firstHitBall/
+        // anyCushion tracking is empty — running foul detection there would
+        // always see "nothing happened". It instead waits for
+        // PoolOnline.applyRemoteTurnResult() to apply the shooter's verdict.
+        // Note: this is now redundant with update()'s own currentPlayer gate
+        // (kept as defense-in-depth) — it deliberately checks currentPlayer
+        // directly rather than the old `lastShooter || currentPlayer`
+        // fallback, since lastShooter is a sticky value set only by the
+        // 'shot_started' broadcast and goes stale if that message is dropped.
+        if (this.online && this.currentPlayer !== this.myPlayerNumber) return;
+
+        // This shot is now resolved; a late-arriving sync must never cause a
+        // second (phantom) resolution.
+        this.myShotInFlight = false;
+
         this.turnResolved = true;
         this.shotActive = false;
+        const wasBreakShot = this.breakShot;
         this.breakShot = false;
 
-        const shooter = this.lastShooter || this.currentPlayer;
+        const shooter = this.online ? this.myPlayerNumber : (this.lastShooter || this.currentPlayer);
         this.currentPlayer = shooter;
         const opp = this.opponentOf(shooter);
         const cuePocketed = this.cueBall.isPocketed;
+        const pocketed = this.shotPocketed.filter(b => b.number !== 0 && b.number !== 8);
+        const typeBeforeShot = shooter === 1 ? this.player1Type : this.player2Type;
+        const clearedBeforeShot = !!typeBeforeShot && this.getPlayerBallsRemaining(shooter) === 0;
+
+        // Validate every shot before assigning groups or deciding the 8-ball.
+        let foul = false;
+        let foulMsg = '';
+        if (cuePocketed) { foul = true; foulMsg = 'Scratch!'; }
+        else if (!this.firstHitBall) { foul = true; foulMsg = 'No ball was hit!'; }
+        else if (wasBreakShot && this.firstHitBall.number !== 1) { foul = true; foulMsg = 'The 1-ball must be hit first on the break!'; }
+        else if (wasBreakShot && pocketed.length === 0 && !this.shotPocketed.some(b => b.number === 8) && [...this.cushionHitBalls].filter(n => n !== 0).length < 4) {
+            foul = true; foulMsg = 'Illegal break — four object balls must reach a rail!';
+        }
+        else if (typeBeforeShot && !clearedBeforeShot && !this.isMatching(this.firstHitBall, typeBeforeShot)) { foul = true; foulMsg = 'Hit the wrong ball first!'; }
+        else if (typeBeforeShot && clearedBeforeShot && this.firstHitBall.number !== 8) { foul = true; foulMsg = 'The 8-ball must be hit first!'; }
+        else if (!typeBeforeShot && this.firstHitBall.number === 8) { foul = true; foulMsg = 'Hit the 8-ball first!'; }
+        else if (this.shotPocketed.length === 0 && !this.anyCushion) { foul = true; foulMsg = 'No cushion, no pocket!'; }
 
         // ---- 8-ball pocketed this shot -> win/loss ----
         const eight = this.shotPocketed.find(b => b.number === 8);
         if (eight) {
             const cleared = this.getPlayerBallsRemaining(shooter) === 0;
-            if (cleared && !cuePocketed) {
+            let winner;
+            if (cleared && !foul) {
                 this.showMessage('8-ball sunk! You win! 🎉');
-                this.endGame(shooter);
+                winner = shooter;
             } else {
                 this.showMessage(cleared ? 'Scratch on the 8-ball — you lose!' : '8-ball pocketed too early — you lose!');
-                this.endGame(opp);
+                winner = opp;
             }
+            if (this.online && window.onlineMode_8ballpool) {
+                window.onlineMode_8ballpool.reportShotResult({ winner });
+            }
+            this.endGame(winner);
             this.updatePlayerBalls();
             this.renderPocketedBalls();
             return;
         }
 
-        const pocketed = this.shotPocketed.filter(b => b.number !== 0 && b.number !== 8);
-
         // ---- group assignment on the first legal pocket ----
-        const assigningFirstType = this.firstBallType === null && pocketed.length > 0 && !cuePocketed;
+        const assigningFirstType = !wasBreakShot && !foul && this.firstBallType === null && pocketed.length > 0;
         if (assigningFirstType) {
             this.assignBallType(pocketed[0]);
         }
 
         const type = shooter === 1 ? this.player1Type : this.player2Type;
 
-        // On the first scoring shot, the shooter legally owns that first potted group.
-        // Treat it as their own-pocket result immediately so AI and player both keep turn.
-        let pocketedOwn = assigningFirstType;
-
-        // ---- foul detection ----
-        let foul = false;
-        let foulMsg = '';
-        const clearedGroup = type && this.getPlayerBallsRemaining(shooter) === 0;
-        if (cuePocketed) { foul = true; foulMsg = 'Scratch!'; }
-        else if (this.firstHitBall && this.firstHitBall.number === 8 && type && !clearedGroup) { foul = true; foulMsg = 'Hit the 8-ball first!'; }
-        else if (type && this.firstHitBall && !this.isMatching(this.firstHitBall, type)) { foul = true; foulMsg = 'Hit the wrong ball first!'; }
-        else if (type && pocketed.length === 0 && !this.anyCushion) { foul = true; foulMsg = 'No cushion, no pocket!'; }
+        // Did this shot earn another turn?
+        //  - assigningFirstType: the shooter just claimed a group by potting it.
+        //  - pottedOnBreak: potting on the break keeps the table AND leaves it
+        //    open (no group assigned yet). Without this the breaker lost their
+        //    turn for a legal pot, because the group is still null on the break
+        //    so isMatching() below returns false for every potted ball.
+        //  - otherwise: potted at least one ball of their own group.
+        const pottedOnBreak = wasBreakShot && pocketed.length > 0;
+        let pocketedOwn = assigningFirstType || pottedOnBreak;
 
         for (const b of pocketed) if (this.isMatching(b, type)) pocketedOwn = true;
 
         if (foul) {
             this.playPoolSound('foul');
-            this.showMessage(`${foulMsg} Foul on ${shooter === 1 ? 'Player 1' : 'Player 2'} — ball in hand!`);
+            this.showMessage(`${foulMsg} Foul on ${this.playerLabel(shooter)} — ball in hand!`);
         }
 
         // ---- ball in hand for the opponent on ANY foul (not just a scratch) ----
@@ -882,10 +997,30 @@ class PoolGame {
         this.startTurnTimer();
         this.updatePlayerBalls();
         this.renderPocketedBalls();
+
+        if (this.online) {
+            if (window.onlineMode_8ballpool) {
+                console.log('[Pool] reporting shot result — nextTurn:', this.currentPlayer, 'keepTurn:', keepTurn);
+                window.onlineMode_8ballpool.reportShotResult({
+                    nextTurn: this.currentPlayer,
+                    keepTurn, // tells the server not to flip current_turn_user_id
+                    ballInHand: this.ballInHand,
+                    assignedType: assigningFirstType ? { player: shooter, type: this.firstBallType } : null,
+                    finalBalls: this.balls.map(b => ({ number: b.number, x: b.x, y: b.y, isPocketed: b.isPocketed }))
+                });
+            } else {
+                console.error('[Pool] online but window.onlineMode_8ballpool is missing — shot result was never reported to the opponent!');
+            }
+        }
     }
 
     opponentOf(player) {
         return player === 1 ? 2 : 1;
+    }
+
+    playerLabel(player) {
+        if (this.online) return player === this.myPlayerNumber ? 'You' : 'Opponent';
+        return player === 1 ? 'Player 1' : 'Player 2';
     }
 
     isMatching(ball, group) {
@@ -899,6 +1034,7 @@ class PoolGame {
     // Ball-in-hand: place the cue ball after a foul/scratch
     setBallInHandFor(player) {
         this.ballInHand = true;
+        this.ballInHandPlayer = player;
         this.cueBall.isPocketed = false;
         this.cueBall.vx = 0;
         this.cueBall.vy = 0;
@@ -907,10 +1043,13 @@ class PoolGame {
 
         if (this.gameMode === 'ai' && player === 2) {
             this.placeCueBallAt(this.randomFreeSpot());
-            this.ballInHand = false;
-        } else {
+        } else if (!this.online || player === this.myPlayerNumber) {
             this.showMessage('Ball in hand — click on the table to place the cue ball');
         }
+    }
+
+    hasBallInHandControl() {
+        return this.ballInHand && (!this.online || this.ballInHandPlayer === this.myPlayerNumber);
     }
 
     randomFreeSpot() {
@@ -938,7 +1077,7 @@ class PoolGame {
     }
 
     placeCueBallAt(pos) {
-        if (!pos) return;
+        if (!pos || !this.hasBallInHandControl()) return;
         const pad = this.cushionMargin + this.ballRadius;
         const x = Math.max(pad, Math.min(this.tableWidth - pad, pos.x));
         const y = Math.max(pad, Math.min(this.tableHeight - pad, pos.y));
@@ -950,8 +1089,12 @@ class PoolGame {
         this.cueBall.y = y;
         this.cueBall.isPocketed = false;
         this.ballInHand = false;
+        this.ballInHandPlayer = null;
         this.isShooting = false;
         this.playPoolSound('place');
+        if (this.online && window.onlineMode_8ballpool) {
+            window.onlineMode_8ballpool.reportCueBallPlacement({ x, y });
+        }
     }
 
     endTurn() {
@@ -985,28 +1128,58 @@ class PoolGame {
         this.cueBall.vy = 0;
         this.isShooting = false;
         this.ballInHand = false;
+        this.ballInHandPlayer = null;
         this.endTurn();
     }
 
     // ========== Rules ==========
 
+    // Single source of truth for group assignment. Potting one group
+    // implicitly assigns the OTHER group to the opponent — both players get a
+    // type from one event, always. The local rules path (assignBallType) and
+    // the online remote-apply path (PoolOnline.applyRemoteTurnResult) both go
+    // through here so the two clients can never disagree about who owns which
+    // group. They used to duplicate this logic, and the remote copy set only
+    // the shooter's type — leaving the other player permanently on
+    // "Yet to decide" on the watching client. That was not just cosmetic:
+    // getPlayerBallsRemaining() returns 7 for a null type, which corrupted
+    // 8-ball win/loss detection and the foul checks that client then applied
+    // to its OWN next shot and reported back as authoritative.
+    setGroups(player, type) {
+        if (type !== 'solids' && type !== 'stripes') return;
+        const other = type === 'solids' ? 'stripes' : 'solids';
+
+        this.firstBallType = type;
+        if (player === 1) {
+            this.player1Type = type;
+            this.player2Type = other;
+        } else {
+            this.player2Type = type;
+            this.player1Type = other;
+        }
+
+        this.refreshGroupLabels();
+    }
+
+    groupLabel(type) {
+        if (!type) return 'Yet to decide';
+        return type === 'solids' ? 'Solids' : 'Stripes';
+    }
+
+    refreshGroupLabels() {
+        const p1 = document.getElementById('player1Type');
+        const p2 = document.getElementById('player2Type');
+        if (p1) p1.textContent = this.groupLabel(this.player1Type);
+        if (p2) p2.textContent = this.groupLabel(this.player2Type);
+    }
+
     assignBallType(ball) {
         if (this.firstBallType !== null || ball.number === 8) return;
 
-        this.firstBallType = ball.isStripe ? 'stripes' : 'solids';
+        this.setGroups(this.currentPlayer, ball.isStripe ? 'stripes' : 'solids');
 
-        if (this.currentPlayer === 1) {
-            this.player1Type = this.firstBallType;
-            this.player2Type = this.firstBallType === 'solids' ? 'stripes' : 'solids';
-        } else {
-            this.player2Type = this.firstBallType;
-            this.player1Type = this.firstBallType === 'solids' ? 'stripes' : 'solids';
-        }
-
-        document.getElementById('player1Type').textContent = this.player1Type === 'solids' ? 'Solids' : 'Stripes';
-        document.getElementById('player2Type').textContent = this.player2Type === 'solids' ? 'Solids' : 'Stripes';
         this.playPoolSound('assign');
-        this.showMessage(`Groups decided — Player 1: ${document.getElementById('player1Type').textContent}, Player 2: ${document.getElementById('player2Type').textContent}`);
+        this.showMessage(`Groups decided — ${this.playerLabel(1)}: ${this.groupLabel(this.player1Type)}, ${this.playerLabel(2)}: ${this.groupLabel(this.player2Type)}`);
         this.updatePlayerBalls();
         this.renderPocketedBalls();
     }
@@ -1083,7 +1256,7 @@ class PoolGame {
         const d = document.createElement('div');
         d.className = 'pocketed-ball';
         const c = this.getBallColor(number);
-        if (number > 8 && number < 15) {
+        if (number > 8 && number <= 15) {   // 9-15 are stripes (15 was drawn solid)
             // Stripe: white base, coloured band, white number
             d.style.background = `linear-gradient(#eee 0%, #eee 30%, ${c} 30%, ${c} 70%, #eee 70%, #eee 100%)`;
             d.textContent = number;
@@ -1116,8 +1289,28 @@ class PoolGame {
     }
 
     updatePlayerCards() {
-        document.getElementById('player1Card').classList.toggle('active', this.currentPlayer === 1);
-        document.getElementById('player2Card').classList.toggle('active', this.currentPlayer === 2);
+        const p1Card = document.getElementById('player1Card');
+        const p2Card = document.getElementById('player2Card');
+        p1Card.classList.toggle('active', this.currentPlayer === 1);
+        p2Card.classList.toggle('active', this.currentPlayer === 2);
+
+        // The turn-indicator text is only ever visible on the active card
+        // (CSS hides it at opacity:0 on the inactive one), but it was hardcoded
+        // "Your Turn" / "Waiting..." in the HTML regardless of who's actually
+        // active — meaning player 2's card showed "Waiting..." at the exact
+        // moment it became their turn. Set the right label per game mode.
+        const p1Indicator = p1Card.querySelector('.turn-indicator');
+        const p2Indicator = p2Card.querySelector('.turn-indicator');
+        if (this.online) {
+            if (p1Indicator) p1Indicator.textContent = this.myPlayerNumber === 1 ? 'Your Turn' : "Opponent's Turn";
+            if (p2Indicator) p2Indicator.textContent = this.myPlayerNumber === 2 ? 'Your Turn' : "Opponent's Turn";
+        } else if (this.gameMode === 'ai') {
+            if (p1Indicator) p1Indicator.textContent = 'Your Turn';
+            if (p2Indicator) p2Indicator.textContent = "AI's Turn";
+        } else {
+            if (p1Indicator) p1Indicator.textContent = 'Your Turn';
+            if (p2Indicator) p2Indicator.textContent = 'Your Turn';
+        }
     }
 
     startTurnTimer() {
@@ -1210,6 +1403,7 @@ class PoolGame {
             this.shotPocketed = [];
             this.firstHitBall = null;
             this.anyCushion = false;
+            this.cushionHitBalls.clear();
             this.cueBall.vx = Math.cos(aimAngle) * finalPower;
             this.cueBall.vy = Math.sin(aimAngle) * finalPower;
             this.aimPower = 0;
@@ -1403,7 +1597,7 @@ class PoolGame {
         this.drawPockets();
 
         // Ball in hand: show a placement ring instead of the aim line / cue
-        if (this.ballInHand) {
+        if (this.hasBallInHandControl()) {
             this.drawBallInHandRing();
             return;
         }
@@ -1543,7 +1737,7 @@ class PoolGame {
         for (let ball of this.balls) {
             if (ball !== this.cueBall) ball.draw(this.ctx);
         }
-        this.cueBall.draw(this.ctx);
+        if (!this.ballInHand || this.hasBallInHandControl()) this.cueBall.draw(this.ctx);
     }
 
     drawAimLine() {
@@ -1793,13 +1987,17 @@ class PoolGame {
     async endGame(winner) {
         this.gameOver = true;
 
+        // Offline/AI: the local human is always seated as player 1.
+        // Online: the local human is whichever seat matchmaking assigned
+        // (myPlayerNumber), since either side can be player 1 or 2.
+        const won = this.online ? winner === this.myPlayerNumber : winner === 1;
+
         // When GameCommon is active it handles payout + result screen
         if (window.gameCommon && window.gameCommon.started) {
-            const won = winner === 1;
             this.playPoolSound(won ? 'win' : 'lose');
             window.gameCommon.showResult(won, won
                 ? 'You cleared the table — victory!'
-                : (this.gameMode === 'ai' ? 'The AI won this round.' : 'Player 2 wins the match.'));
+                : (this.gameMode === 'ai' ? 'The AI won this round.' : (this.online ? 'Opponent wins the match.' : 'Player 2 wins the match.')));
             return;
         }
 
@@ -1879,16 +2077,18 @@ class PoolGame {
         this.shotPocketed = [];
         this.firstHitBall = null;
         this.anyCushion = false;
+        this.cushionHitBalls.clear();
         this.player1Pocketed = [];
         this.player2Pocketed = [];
         this.ballInHand = false;
+        this.ballInHandPlayer = null;
         this.placementPos = null;
+        this.myShotInFlight = false;
         this.stopChargeSound();
 
         this.initBalls();
         this.updatePlayerCards();
-        document.getElementById('player1Type').textContent = 'Yet to decide';
-        document.getElementById('player2Type').textContent = 'Yet to decide';
+        this.refreshGroupLabels();
         this.updatePlayerBalls();
         this.renderPocketedBalls();
 
@@ -1919,7 +2119,11 @@ class PoolGame {
             this.updatePowerBar();
         }
 
-        if (this.turnTimerRunning && !this.gameOver && this.gameStarted && !this.isShooting && !this.cueStriking && !this.aiShotScheduled) {
+        // Online: skip the local turn timer entirely. It has no server-side
+        // authority — both clients would independently "decide" a timeout and
+        // could disagree — so a stalled online match only resolves when a
+        // player leaves, same limitation as chess's online mode.
+        if (this.turnTimerRunning && !this.gameOver && this.gameStarted && !this.isShooting && !this.cueStriking && !this.aiShotScheduled && !this.online) {
             const elapsed = (now - (this.lastTurnTick || now)) / 1000;
             this.lastTurnTick = now;
             this.turnTimeLeft = Math.max(0, this.turnTimeLeft - elapsed);
@@ -1947,7 +2151,7 @@ class PoolGame {
         }
 
         // Ball in hand: ghost cue ball follows the cursor
-        if (this.ballInHand && this.placementPos) {
+        if (this.hasBallInHandControl() && this.placementPos) {
             const pad = this.cushionMargin + this.ballRadius;
             this.cueBall.x = Math.max(pad, Math.min(this.tableWidth - pad, this.placementPos.x));
             this.cueBall.y = Math.max(pad, Math.min(this.tableHeight - pad, this.placementPos.y));
@@ -2001,6 +2205,10 @@ let game;
 
 document.addEventListener('DOMContentLoaded', () => {
     game = new PoolGame('poolCanvas');
+    // Top-level `let` does not attach to `window` the way `var` would, but
+    // pool-online.js (and this file's own inline-script neighbors) need
+    // window.game to reach the instance from outside this script's scope.
+    window.game = game;
 
     const difficultySelect = document.getElementById('aiDifficulty');
     document.querySelectorAll('.difficulty-pill').forEach(btn => {

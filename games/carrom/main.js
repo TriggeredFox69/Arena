@@ -14,6 +14,8 @@ function init() {
     onGameOver: showResult,
     onStateChange: updateHUD,
   });
+  window.carromGame = game;
+  window.CARROM_GAME_MODE = GAME_MODE;
 
   // Score target labels
   document.querySelectorAll('.player-target').forEach(el => {
@@ -62,6 +64,37 @@ function init() {
   if (typeof window.setupCarromGameCommon === 'function') {
     window.setupCarromGameCommon({ startGame, backToMenu, getGame: () => game });
   }
+
+  // ---- Online bridge -----------------------------------------------------
+  // main.js is an ES module, so games/carrom-online.js (a classic script)
+  // cannot import from it — publish the minimum surface it needs.
+  // Note this deliberately calls startNew(GAME_MODE.PVP) instead of going
+  // through start()'s mapHostMode(), which folds 'pvp' into LOCAL and would
+  // disable the per-player turn gate in _canInteract().
+  window.carromApi = {
+    GAME_MODE,
+    TURN,
+    getGame: () => game,
+    // Begin an online match as player 1 (host) or player 2 (guest).
+    startOnline(playerNumber) {
+      hideResult();
+      document.getElementById('menuScreen')?.classList.add('hidden');
+      document.getElementById('gameScreen')?.classList.remove('hidden');
+      game.setPlayerNumber(playerNumber);
+      game.startNew(GAME_MODE.PVP, DIFFICULTY.MEDIUM);
+      game.start();
+      updateHUD(game.getState());
+    },
+    // Replace local state with the shooter's authoritative snapshot.
+    applySnapshot(snapshot) {
+      if (!snapshot) return;
+      const n = game.myPlayerNumber;
+      game.resumeState(snapshot);
+      game.setPlayerNumber(n); // resumeState must not clobber our identity
+      updateHUD(game.getState());
+    },
+    refreshHud() { updateHUD(game.getState()); }
+  };
 }
 
 function selectDifficulty(diff) {
@@ -97,11 +130,13 @@ function backToMenu() {
     onGameOver: showResult,
     onStateChange: updateHUD,
   });
+  window.carromGame = game;
 }
 
 function showResult(result) {
   const state = game.getState();
-  const won = state.mode === GAME_MODE.AI ? result.winner === 'p1' : result.winner === 'p1';
+  const myWinner = game.myPlayerNumber === 2 ? 'p2' : 'p1';
+  const won = state.mode === GAME_MODE.AI ? result.winner === 'p1' : result.winner === myWinner;
   const details = `Final score — ${state.scores.p1} vs ${state.scores.p2} (target ${WIN_SCORE})`;
 
   if (typeof window.gameCommon !== 'undefined' && window.gameCommon.showResult) {

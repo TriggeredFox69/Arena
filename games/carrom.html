@@ -32,6 +32,9 @@
       <button class="btn btn-secondary" id="btnLocal" style="width:100%;">
         👥 Local 2-Player
       </button>
+      <button class="btn btn-secondary" id="btnOnline" style="width:100%;">
+        🌐 Play Online
+      </button>
 
       <p class="menu-tip">Use mouse or touch: tap to place, drag back to aim, release to strike.</p>
     </div>
@@ -88,7 +91,11 @@
     </div>
   </div>
 
+  <script src="../js/config.js"></script>
   <script src="../js/app.js"></script>
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/socket-client.js?v=9"></script>
+  <script src="../js/online-mode.js?v=9"></script>
   <script src="../js/game-common.js"></script>
   <script>
     // === ArenaX GameCommon integration (wager, toolbar, timers, result) ===
@@ -106,11 +113,33 @@
         // The shared toolbar has its own sound button — hide the in-header one
         const hdrBtn = document.getElementById('btnSound');
         if (hdrBtn) hdrBtn.style.display = 'none';
+
+        // Wrap local/AI start so the shared wager overlay is shown first.
+        function getSelectedDifficulty() {
+          const active = document.querySelector('.diff-btn.active');
+          return active?.dataset?.diff || 'medium';
+        }
+        const startWithWager = (mode, difficulty) => {
+          window.gameCommon.startWithWager(() => startGame(mode, difficulty));
+        };
+        const replaceBtn = (id, handler) => {
+          const btn = document.getElementById(id);
+          if (!btn) return;
+          const clone = btn.cloneNode(true);
+          btn.parentNode.replaceChild(clone, btn);
+          clone.addEventListener('click', handler);
+        };
+        replaceBtn('btnPlayAi', () => startWithWager(window.CARROM_GAME_MODE.AI, getSelectedDifficulty()));
+        replaceBtn('btnLocal', () => startWithWager(window.CARROM_GAME_MODE.LOCAL, 'medium'));
+        // Online has its own matchmaking + wager flow inside the OnlineMode
+        // modal, so it must NOT go through startWithWager().
+        replaceBtn('btnOnline', () => window.onlineMode_carrom?.showModal());
       };
 
       window.gameCommon = new GameCommon({
         gameKey: 'carrom',
         gameName: 'Carrom Clash',
+        autoWagerFlow: false,
         turnTimeLimit: 30,
         rulesHTML: `
           <h3>Objective</h3>
@@ -142,6 +171,16 @@
       window.gameCommon.init();
     })();
   </script>
-  <script src="carrom/main.bundle.js"></script>
+  <!-- Online (Quick-Match). Loaded after the gameCommon inline script above so
+       the constructor picks up window.gameCommon. It reaches the engine lazily
+       through window.carromApi, which the module below publishes once loaded,
+       so load order between the two does not matter. -->
+  <script src="carrom-online.js?v=9"></script>
+  <script>
+    if (window.CarromOnline) {
+      window.onlineMode_carrom = new CarromOnline();
+    }
+  </script>
+  <script type="module" src="carrom/main.js"></script>
 </body>
 </html>

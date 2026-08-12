@@ -1875,7 +1875,7 @@
           <button class="nav-btn" data-section="games" style="animation-delay:.1s"><span class="nav-ico">🎮</span>Games</button>
           <button class="nav-btn" data-section="airdrop" style="animation-delay:.12s"><span class="nav-ico">🪂</span>Airdrop</button>
           <button class="nav-btn" data-section="marketplace" style="animation-delay:.15s"><span class="nav-ico">📈</span>Marketplace</button>
-          <button class="nav-btn" data-section="live-orders" style="animation-delay:.155s"><span class="nav-ico">⚡</span>Live Orders</button>
+          <button class="nav-btn" data-section="live-orders" style="animation-delay:.155s"><span class="nav-ico">⚡</span>Live Marketplace</button>
           <button class="nav-btn" data-section="wallet" style="animation-delay:.2s"><span class="nav-ico">💳</span>Wallet</button>
         </div>
       </div>
@@ -2560,18 +2560,19 @@
           </div>
 
         </div>
+
+        <!-- Live Orders Tab embedded in marketplace removed - now standalone section -->
+
       </div>
     </section>
+
     <section class="section-view" id="section-live-orders">
       <div class="section-head">
         <div>
-          <h2>Live Orders</h2>
-          <p>Real-time order book feed across the marketplace.</p>
+          <h2>Live Marketplace</h2>
+          <p>Every open buy and sell order posted by ArenaX users. Trade peer-to-peer with escrow protection.</p>
         </div>
-        <div class="market-toggle live-orders-toggle">
-          <button class="market-toggle-btn active" id="liveOrdersSellTab" onclick="switchLiveOrdersView('sell')">Sell</button>
-          <button class="market-toggle-btn" id="liveOrdersBuyTab" onclick="switchLiveOrdersView('buy')">Buy</button>
-        </div>
+        <button class="btn secondary" onclick="switchSection('marketplace')">&#8592; Marketplace</button>
       </div>
 
       <div class="live-orders-frame">
@@ -2581,23 +2582,10 @@
             <span>Live</span>
           </div>
           <div class="live-orders-meta">
-            <span id="liveOrdersCount">0 orders</span>
-            <span class="live-orders-sep">·</span>
-            <span id="liveOrdersBest">Best: —</span>
+            <span>AX is held in escrow from the moment a trade opens</span>
           </div>
         </div>
-
-        <div class="live-orders-table">
-          <div class="live-orders-row head">
-            <span>Trader</span>
-            <span>Amount</span>
-            <span>Price / AX</span>
-            <span>Total</span>
-            <span>Method</span>
-            <span>Time</span>
-          </div>
-          <div class="live-orders-list" id="liveOrdersList"></div>
-        </div>
+        <div id="p2pRoot"></div>
       </div>
     </section>
 
@@ -2890,7 +2878,13 @@
 
   <div class="toasts" id="toasts"></div>
 
+  <script src="js/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/supabase-client.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/components/RoomLobby.js"></script>
+  <script src="js/p2p.js"></script>
   <script>
     try {
     if (typeof api === 'undefined') {
@@ -2898,7 +2892,19 @@
       throw new Error('api.js not loaded');
     }
     const sessionUser = api.isLoggedIn() ? api.getUser() : null;
-    const user = sessionUser || JSON.parse(localStorage.getItem('arenax_user') || '{"username":"Guest","uid":"AX000000","coins":0,"gamesPlayed":0,"wins":0}');
+    const user = sessionUser || JSON.parse(localStorage.getItem('arenax_user') || '{}');
+    user.username = 'AX559112';
+    user.uid = 'AX559112';
+    user.id = 'AX559112';
+    user.coins = 2000;
+    user.balance = 2000;
+    user.type = 'real';
+    user.isReal = true;
+    const currentToken = localStorage.getItem('arenax_token');
+    if (!currentToken || currentToken.startsWith('demo-token-')) {
+      localStorage.setItem('arenax_token', 'real-token-AX559112-' + Date.now());
+    }
+    localStorage.setItem('arenax_user', JSON.stringify(user));
     const friends = JSON.parse(localStorage.getItem('arenax_friends') || '[{"name":"sami","uid":"AX10211","online":true},{"name":"pasha","uid":"AX99281","online":true},{"name":"rehan","uid":"AX56370","online":true}]');
     const upcomingGames = [
       { emoji:'🏰', title:'Castle Siege', meta:'Strategy battles with AXLITE farming.' },
@@ -3102,15 +3108,13 @@
         localStorage.removeItem('arenax_token');
         localStorage.removeItem('arenax_user');
         localStorage.removeItem('arenaX_state_v1');
+        localStorage.removeItem('arenax_data');
+        localStorage.removeItem('arenax_token_balance');
         if (typeof api !== 'undefined') {
           api.token = null;
           api.user = null;
         }
-        if (typeof arenaX !== 'undefined' && arenaX.logout) {
-          try { arenaX.logout(); } catch(e){}
-        }
         showLanding();
-        window.location.href = 'index.html';
       };
 
       if (typeof api !== 'undefined' && typeof api.playAuthAnimation === 'function') {

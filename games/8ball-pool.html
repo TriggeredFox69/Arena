@@ -61,6 +61,11 @@
                         <h3>2 Player Local</h3>
                         <p>Play with a friend locally</p>
                     </button>
+                    <button class="mode-btn" type="button" data-mode="online">
+                        <div class="mode-icon">🌐</div>
+                        <h3>Play Online</h3>
+                        <p>Quick Match with another player</p>
+                    </button>
                 </div>
                 <div style="margin-top:24px;text-align:center;color:#b7ad97;font-size:14px;">
                     Choose a mode card to start the table.
@@ -168,16 +173,22 @@
         </div>
     </div>
 
+    <script src="../js/config.js"></script>
     <script src="../js/api.js"></script>
     <script src="../js/app.js"></script>
+    <script src="../js/supabase-config.js"></script>
+    <script src="../js/socket-client.js?v=9"></script>
+    <script src="../js/online-mode.js?v=9"></script>
     <script src="../js/game-common.js"></script>
-    <script src="pool-game.js"></script>
+    <script src="pool-game.js?v=9"></script>
+    <script src="pool-online.js?v=9"></script>
     <script>
         // === ArenaX GameCommon integration (wager, toolbar, timers, result) ===
         document.addEventListener('DOMContentLoaded', () => {
             const gc = new GameCommon({
                 gameKey: '8ball-pool',
                 gameName: '8 Ball Pool',
+                autoWagerFlow: false,
                 turnTimeLimit: 0,
                 rulesHTML: `
                   <h3>Objective</h3>
@@ -207,6 +218,32 @@
             };
 
             gc.init();
+
+            // Wire online (Quick-Match) mode. `game` is created at the bottom
+            // of pool-game.js. PoolOnline binds the realtime broadcast stream
+            // to game's ball array and turn state.
+            if (window.PoolOnline) {
+                window.onlineMode_8ballpool = new PoolOnline();
+            }
+
+            // Replace mode button listeners so the shared wager overlay is shown
+            // for local/AI modes; online mode has its own matchmaking + wager
+            // flow inside the OnlineMode modal.
+            document.querySelectorAll('[data-mode]').forEach(btn => {
+                const mode = btn.getAttribute('data-mode');
+                const clone = btn.cloneNode(true);
+                btn.parentNode.replaceChild(clone, btn);
+                clone.addEventListener('click', () => {
+                    if (mode === 'online') {
+                        window.onlineMode_8ballpool?.showModal();
+                        return;
+                    }
+                    const difficulty = document.getElementById('aiDifficulty')?.value || 'medium';
+                    window.gameCommon.startWithWager(() => {
+                        window.game.startGame(mode, difficulty);
+                    });
+                });
+            });
         });
     </script>
 </body>

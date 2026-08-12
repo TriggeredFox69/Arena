@@ -5,7 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Glow Hockey</title>
+    <script src="../js/config.js"></script>
     <script src="../js/app.js"></script>
+    <script src="../js/supabase-config.js"></script>
+    <script src="../js/socket-client.js?v=9"></script>
+    <script src="../js/online-mode.js?v=9"></script>
     <script src="../js/game-common.js"></script>
     <style>
         * {
@@ -444,6 +448,7 @@
 
             <button class="menu-btn" id="vsAiBtn">🖥️ Play vs Computer</button>
             <button class="menu-btn alt" id="vsPlayerBtn">🧑‍🤝‍🧑 Play vs Player (Local)</button>
+            <button class="menu-btn alt" id="vsOnlineBtn">🌐 Play Online</button>
 
             <div class="instructions">
                 <strong>Vs Computer:</strong> Drag / move mouse to control your glowing mallet (bottom).<br>
@@ -585,6 +590,21 @@
 
             let score = { top: 0, bottom: 0 };
 
+            // ---- Online (Quick-Match) state, driven by games/hockey-online.js ----
+            // Glow hockey is the only simultaneous-motion game here: there is no
+            // turn to hand over, so authority is split by OBJECT instead of by
+            // turn. Each client owns its own mallet; the HOST owns the puck,
+            // goals and the score. The guest dead-reckons the puck from the
+            // host's last snapshot and is corrected ~20x/second, which keeps
+            // motion smooth without ever letting the two sides disagree about
+            // whether a goal happened.
+            const NET = {
+                active: false,
+                isHost: false,
+                mySide: 'bottom',   // host = bottom, guest = top
+                oppTarget: null     // last target received for the opponent mallet
+            };
+
             let particles = [];
             let shake = { x: 0, y: 0, t: 0 };
 
@@ -624,6 +644,13 @@
             canvas.addEventListener('pointerleave', (e) => { if (e.buttons === 0) releasePointer(e); });
 
             function routePointer(p) {
+                if (NET.active) {
+                    // Online: a client may only ever drive its own mallet,
+                    // regardless of which half of the table it touched.
+                    if (NET.mySide === 'bottom') rawPointerBottom = { x: p.x, y: p.y, active: true };
+                    else rawPointerTop = { x: p.x, y: p.y, active: true };
+                    return;
+                }
                 if (mode === '2p') {
                     if (p.y > CY) { rawPointerBottom = { x: p.x, y: p.y, active: true }; }
                     else { rawPointerTop = { x: p.x, y: p.y, active: true }; }
@@ -1033,7 +1060,11 @@
             }
 
             function physicsStep(dt) {
-                if (rawPointerBottom.active) {
+                // Local input updates the target for the local mallet only.
+                if (NET.active && NET.mySide === 'top') {
+                    // We are the guest: the bottom mallet belongs to the host.
+                    if (NET.oppTarget) { malletBottom.targetX = NET.oppTarget.x; malletBottom.targetY = NET.oppTarget.y; }
+                } else if (rawPointerBottom.active) {
                     malletBottom.targetX = rawPointerBottom.x;
                     malletBottom.targetY = rawPointerBottom.y;
                 }
@@ -1044,7 +1075,17 @@
                 malletBottom.vy = (malletBottom.y - prevBY) / dt;
 
                 const prevTX = malletTop.x, prevTY = malletTop.y;
-                if (mode === 'ai') {
+                if (NET.active) {
+                    // Whichever mallet is NOT ours is driven purely by the
+                    // target streamed from the peer. No AI, no keyboard.
+                    if (NET.mySide === 'bottom') {
+                        if (NET.oppTarget) { malletTop.targetX = NET.oppTarget.x; malletTop.targetY = NET.oppTarget.y; }
+                    } else if (rawPointerTop.active) {
+                        malletTop.targetX = rawPointerTop.x;
+                        malletTop.targetY = rawPointerTop.y;
+                    }
+                    updateMalletTowardTarget(malletTop, 2600, dt);
+                } else if (mode === 'ai') {
                     updateAI(dt);
                     // Give the AI a temporary speed boost while urgently retrieving a
                     // lingering puck, so it reliably closes the distance quickly instead
@@ -1056,10 +1097,10 @@
                     if (rawPointerTop.active) {
                         malletTop.targetX = rawPointerTop.x;
                         malletTop.targetY = rawPointerTop.y;
-                        updateMalletTowardTarget(malletTop, 2600, dt);
                     } else {
                         updateKeyboardMallet(malletTop, dt);
                     }
+                    updateMalletTowardTarget(malletTop, 2600, dt);
                 }
                 clampMalletBounds(malletTop, true);
                 malletTop.vx = (malletTop.x - prevTX) / dt;
@@ -1077,7 +1118,7 @@
                 const inGoalX = puck.x > GOAL_L + R_P * 0.3 && puck.x < GOAL_R - R_P * 0.3;
                 if (puck.y - R_P < 0) {
                     if (inGoalX) {
-                        if (puck.y + R_P < -6) { scoreGoal('bottom'); return; }
+                        if (puck.y + R_P < -6) { if (!NET.active || NET.isHost) scoreGoal('bottom'); return; }
                     } else {
                         puck.y = R_P; puck.vy = Math.abs(puck.vy) * 0.94; sfxWall(Math.hypot(puck.vx, puck.vy));
                         spawnParticles(puck.x, puck.y, '#ff8fe8', 6, 0.6);
@@ -1085,7 +1126,7 @@
                 }
                 if (puck.y + R_P > H) {
                     if (inGoalX) {
-                        if (puck.y - R_P > H + 6) { scoreGoal('top'); return; }
+                        if (puck.y - R_P > H + 6) { if (!NET.active || NET.isHost) scoreGoal('top'); return; }
                     } else {
                         puck.y = H - R_P; puck.vy = -Math.abs(puck.vy) * 0.94; sfxWall(Math.hypot(puck.vx, puck.vy));
                         spawnParticles(puck.x, puck.y, '#66e0ff', 6, 0.6);
@@ -1348,7 +1389,9 @@
             }
             function resetPositions(dirBias) {
                 malletBottom.x = CX; malletBottom.y = H - R_M - 40;
+                malletBottom.targetX = malletBottom.x; malletBottom.targetY = malletBottom.y;
                 malletTop.x = CX; malletTop.y = R_M + 40;
+                malletTop.targetX = malletTop.x; malletTop.targetY = malletTop.y;
                 puck.x = CX; puck.y = CY;
                 puck.vx = (Math.random() - 0.5) * 80;
                 puck.vy = (dirBias || (Math.random() < 0.5 ? -1 : 1)) * (220 + Math.random() * 60);
@@ -1411,7 +1454,9 @@
                 document.getElementById('controlRow').style.display = 'flex';
                 const hc = document.getElementById('hudCenter');
                 hc.style.display = 'block';
-                hc.textContent = mode === 'ai' ? ('VS COMPUTER · ' + difficulty.toUpperCase()) : 'LOCAL 2 PLAYER';
+                if (mode === 'ai') hc.textContent = 'VS COMPUTER · ' + difficulty.toUpperCase();
+                else if (mode === 'online') hc.textContent = 'ONLINE MATCH';
+                else hc.textContent = 'LOCAL 2 PLAYER';
                 rawPointerBottom.active = false;
                 rawPointerTop.active = false;
                 startCountdown();
@@ -1421,8 +1466,21 @@
             function endGame() {
                 state = 'gameover';
                 stopHum();
-                const playerWon = score.bottom > score.top;
-                const winner = playerWon ? (mode === 'ai' ? 'You' : 'Player 1') : (mode === 'ai' ? 'Computer' : 'Player 2');
+                // Online: "we" are whichever side we were dealt. This was
+                // hardcoded to the bottom mallet, so the guest (top) saw a win
+                // when they had actually lost.
+                let myScore = NET.active && NET.mySide === 'top' ? score.top : score.bottom;
+                let oppScore = NET.active && NET.mySide === 'top' ? score.bottom : score.top;
+                let playerWon = NET.active ? myScore > oppScore : score.bottom > score.top;
+                let winner;
+                if (NET.active) {
+                    winner = playerWon ? 'You'
+                        : ((window.onlineMode_hockey && window.onlineMode_hockey.opponent
+                            && window.onlineMode_hockey.opponent.username) || 'Opponent');
+                    if (window.onlineMode_hockey) window.onlineMode_hockey.reportGameOver(playerWon);
+                } else {
+                    winner = playerWon ? (mode === 'ai' ? 'You' : 'Player 1') : (mode === 'ai' ? 'Computer' : 'Player 2');
+                }
                 if (window.gameCommon && window.gameCommon.started) {
                     if (playerWon) sfxWin(); else sfxLose();
                     window.gameCommon.showResult(playerWon, `Final score: <b>${score.bottom} - ${score.top}</b> — ${winner} wins.`);
@@ -1500,6 +1558,51 @@
             });
             document.getElementById('vsAiBtn').addEventListener('click', () => { ensureAudio(); sfxUIClick(); startGame('ai'); });
             document.getElementById('vsPlayerBtn').addEventListener('click', () => { ensureAudio(); sfxUIClick(); startGame('2p'); });
+            document.getElementById('vsOnlineBtn')?.addEventListener('click', () => {
+                ensureAudio(); sfxUIClick();
+                // Online carries its own matchmaking + wager flow.
+                window.onlineMode_hockey?.showModal();
+            });
+
+            // ---- Online bridge --------------------------------------------
+            // The engine lives in this closure; publish only what
+            // games/hockey-online.js needs.
+            window.hockeyApi = {
+                NET,
+                startOnline(isHost) {
+                    NET.active = true;
+                    NET.isHost = !!isHost;
+                    NET.mySide = isHost ? 'bottom' : 'top';
+                    NET.oppTarget = null;
+                    ensureAudio();
+                    startGame('online');
+                },
+                stopOnline() {
+                    NET.active = false;
+                    NET.oppTarget = null;
+                },
+                // Our own mallet's current target, streamed to the peer.
+                getMyTarget() {
+                    const m = NET.mySide === 'bottom' ? malletBottom : malletTop;
+                    return { x: m.targetX, y: m.targetY };
+                },
+                setOppTarget(t) { NET.oppTarget = t; },
+                // Host -> guest authoritative puck + score snapshot.
+                getPuckSnapshot() {
+                    return { x: puck.x, y: puck.y, vx: puck.vx, vy: puck.vy,
+                             top: score.top, bottom: score.bottom };
+                },
+                applyPuckSnapshot(s2) {
+                    if (!s2) return;
+                    puck.x = s2.x; puck.y = s2.y; puck.vx = s2.vx; puck.vy = s2.vy;
+                    if (typeof s2.top === 'number' && typeof s2.bottom === 'number'
+                        && (score.top !== s2.top || score.bottom !== s2.bottom)) {
+                        score.top = s2.top; score.bottom = s2.bottom;
+                        updateScoreUI();
+                    }
+                },
+                getScore() { return { top: score.top, bottom: score.bottom }; }
+            };
             document.getElementById('pauseBtn').addEventListener('click', () => { ensureAudio(); togglePause(); });
             document.getElementById('resetBtn').addEventListener('click', manualReset);
             document.getElementById('resumeBtn').addEventListener('click', () => { ensureAudio(); togglePause(); });
@@ -1585,6 +1688,7 @@
             const gc = new GameCommon({
                 gameKey: 'Glow-hockey',
                 gameName: 'Glow Hockey',
+                autoWagerFlow: false,
                 turnTimeLimit: 0,
                 rulesHTML: `
                   <h3>Objective</h3>
@@ -1615,7 +1719,33 @@
             };
 
             gc.init();
+
+            // Wrap local/AI start buttons so they go through the shared wager overlay.
+            function startLocalGameWithWager(selectedMode) {
+                window.gameCommon.startWithWager(() => startGame(selectedMode));
+            }
+            function replaceStartButton(id, mode) {
+                const btn = document.getElementById(id);
+                if (!btn) return;
+                const clone = btn.cloneNode(true);
+                btn.parentNode.replaceChild(clone, btn);
+                clone.addEventListener('click', () => { ensureAudio(); sfxUIClick(); startLocalGameWithWager(mode); });
+            }
+            replaceStartButton('vsAiBtn', 'ai');
+            replaceStartButton('vsPlayerBtn', '2p');
+            const rematchBtn = document.getElementById('rematchBtn');
+            if (rematchBtn) {
+                const clone = rematchBtn.cloneNode(true);
+                rematchBtn.parentNode.replaceChild(clone, rematchBtn);
+                clone.addEventListener('click', () => { ensureAudio(); sfxUIClick(); startLocalGameWithWager(mode); });
+            }
         })();
+    </script>
+
+    <!-- Online (Quick-Match). After the engine so window.hockeyApi exists. -->
+    <script src="hockey-online.js?v=9"></script>
+    <script>
+        if (window.HockeyOnline) { window.onlineMode_hockey = new HockeyOnline(); }
     </script>
 </body>
 

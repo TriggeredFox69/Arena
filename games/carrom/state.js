@@ -15,6 +15,14 @@ export const SIDE = { WHITE: 'white', BLACK: 'black' };
 export const GAME_MODE = { AI: 'ai', LOCAL: 'local', PVP: 'pvp' };
 export const DIFFICULTY = { EASY: 'easy', MEDIUM: 'medium', HARD: 'hard' };
 
+// Scoring. These two were referenced by rules-engine.js and main.js but were
+// missing from this file, so the whole carrom module graph failed to load with
+// "does not provide an export named 'COIN_VALUE'" — meaning carrom did not run
+// at all. Values recovered from the built main.bundle.js, which was compiled
+// from a working revision.
+export const COIN_VALUE = { black: 10, white: 20, red: 50 };
+export const WIN_SCORE = 200;
+
 // Logical board coordinates
 export const BOARD_SIZE = 700;
 export const MARGIN = 42;

@@ -83,6 +83,15 @@ class ChessRoyale {
     this.aiThinking = false;
     this.gameStarted = false;
 
+    // Online (Quick-Match) state. Set by ChessOnline.handleChessStart().
+    // online=true, onlineColor='w'|'b', _onlineMyTurn gates input, and
+    // _applyingRemote lets makeMove run for an opponent's incoming move
+    // without tripping the local myTurn/AI guards.
+    this.online = false;
+    this.onlineColor = null;
+    this._onlineMyTurn = false;
+    this._applyingRemote = false;
+
     this.setupBoardUI();
     this.bindEvents();
     this.resetGame();
@@ -168,6 +177,11 @@ class ChessRoyale {
   handleSquareClick(row, col) {
     if (!this.gameStarted) return;
     if (this.aiThinking) return;
+    if (this._applyingRemote) return; // an opponent's move is being applied
+
+    // Online mode: only allow input on this player's turn.
+    if (this.online && !this._onlineMyTurn) return;
+
     const piece = this.board[row][col];
 
     if (this.selected) {
@@ -179,7 +193,10 @@ class ChessRoyale {
     }
 
     if (piece && piece[0] === this.turn) {
-      if (this.modeSelect.value === 'ai' && this.turn === 'b') return;
+      if (this.online) {
+        // In online play you may only move your own color's pieces.
+        if (this.onlineColor && piece[0] !== this.onlineColor) return;
+      } else if (this.modeSelect.value === 'ai' && this.turn === 'b') return;
       this.selected = { row, col };
       this.legalMoves = this.getLegalMovesForSquare(row, col);
       if (this.legalMoves.length) chessSFX.select();
@@ -374,21 +391,45 @@ class ChessRoyale {
     this.render();
 
     const outcome = this.getGameOutcome(this.turn);
+    const isLocalOnlineMove = this.online && !this._applyingRemote && window.onlineMode_chess;
+
+    // Online: broadcast our own move to the opponent before anything else, so
+    // the mating move still reaches them. Remote moves (_applyingRemote) came
+    // from the peer and must never be re-sent.
+    if (isLocalOnlineMove) {
+      try { window.onlineMode_chess.afterLocalMove(move); } catch (_) {}
+    }
+
     if (outcome) {
       if (outcome.toLowerCase().includes('checkmated')) chessSFX.mate();
       else chessSFX.stalemate();
       this.statusEl.textContent = outcome;
+
+      const isDraw = outcome.toLowerCase().includes('stalemate');
+
+      // Online: report the authoritative result so the server settles the
+      // wager. Only the player who made the final move reports it; the other
+      // side learns the outcome from the 'end' room event.
+      if (isLocalOnlineMove) {
+        try { window.onlineMode_chess.reportGameOver(outcome, isDraw); } catch (_) {}
+      }
+
       if (window.gameCommon && window.gameCommon.started) {
-        const isDraw = outcome.toLowerCase().includes('stalemate');
         // this.turn is the side to move — if they are checkmated, the other side won.
-        // Player is always White (AI mode and wager accounting).
-        const playerWon = !isDraw && this.turn === 'b';
+        // Offline/AI: player is White, so player wins when Black is checkmated (turn==='b').
+        // Online: player wins when the *opponent's* color is the one checkmated.
+        let playerWon;
+        if (this.online && this.onlineColor) {
+          playerWon = !isDraw && this.turn !== this.onlineColor;
+        } else {
+          playerWon = !isDraw && this.turn === 'b';
+        }
         window.gameCommon.showResult(playerWon, `<b>${outcome}</b>`, isDraw);
       }
       return;
     }
 
-    if (this.modeSelect.value === 'ai' && this.turn === 'b') {
+    if (!this.online && this.modeSelect.value === 'ai' && this.turn === 'b') {
       this.scheduleAI();
     }
   }
@@ -565,7 +606,12 @@ class ChessRoyale {
   }
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+// Registered on `document` (not `window`) so this fires in script order
+// relative to chess.html's inline init script, which also listens on
+// `document`. Mixing targets made the inline script's button-clone dance
+// race chess.js's own listener attachment, leaving two click handlers on
+// #newGameBtn — one online-aware, one that always started a plain local game.
+document.addEventListener('DOMContentLoaded', () => {
   updateChessSoundButton();
-  new ChessRoyale();
+  window.chessGame = new ChessRoyale();
 });

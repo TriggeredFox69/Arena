@@ -8,7 +8,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="../js/config.js"></script>
   <script src="../js/app.js"></script>
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/socket-client.js?v=9"></script>
+  <script src="../js/online-mode.js?v=9"></script>
   <script src="../js/game-common.js"></script>
   <style>
     :root {
@@ -365,7 +369,11 @@
         </button>
         <button class="mode-card" onclick="pickMode('local')">
           <div class="m-ico">👥</div>
-          <div><strong>Pass &amp; Play</strong><span>Two players on the same device.</span></div>
+          <div><strong>Pass & Play</strong><span>Two players on the same device.</span></div>
+        </button>
+        <button class="mode-card" onclick="pickMode('online')">
+          <div class="m-ico">🌐</div>
+          <div><strong>Play Online</strong><span>Quick Match against another player.</span></div>
         </button>
       </div>
     </div>
@@ -409,7 +417,11 @@
       players: {},
       timer: null,
       timerLeft: 20,
-      animating: false
+      animating: false,
+      // --- Online (Quick-Match) state, driven by games/checkers-online.js ---
+      online: false,
+      mySide: null,        // DARK for host, LIGHT for guest
+      applyingRemote: false // true while replaying the opponent's move
     };
 
     const $ = id => document.getElementById(id);
@@ -536,7 +548,15 @@
       }
     }
 
-    function sideName(side) { return side === DARK ? 'You' : (S.mode === 'ai' ? aiName() : 'Player 2'); }
+    function sideName(side) {
+      // Online: "You" is whichever side we were dealt, not always DARK.
+      if (S.online) {
+        if (side === S.mySide) return 'You';
+        return (window.onlineMode_checkers && window.onlineMode_checkers.opponent
+          && window.onlineMode_checkers.opponent.username) || 'Opponent';
+      }
+      return side === DARK ? 'You' : (S.mode === 'ai' ? aiName() : 'Player 2');
+    }
     function currentSideName() { return sideName(S.turn); }
     function aiName() { return S.difficulty === 'easy' ? 'Bolt (Easy)' : S.difficulty === 'medium' ? 'Vex (Medium)' : 'Nova (Hard)'; }
 
@@ -672,6 +692,8 @@
       const piece = S.board[r][c];
       if (!piece || piece.side !== S.turn) { sfx.error(); return; }
       if (S.mode === 'ai' && S.turn === LIGHT) return;
+      // Online: never let a client touch the board on the opponent's turn.
+      if (S.online && S.turn !== S.mySide) return;
       if (S.forcedFrom && (S.forcedFrom.row !== r || S.forcedFrom.col !== c)) { sfx.error(); return; }
       S.selected = { row:r, col:c };
       S.validMoves = movesForPiece(r, c);
@@ -682,6 +704,7 @@
     $('board').addEventListener('click', (e) => {
       if (S.gameOver || S.animating || !S.selected) return;
       if (S.mode === 'ai' && S.turn === LIGHT) return;
+      if (S.online && S.turn !== S.mySide) return;
       const rect = $('board').getBoundingClientRect();
       const x = (e.clientX - rect.left) * 800 / rect.width - PAD;
       const y = (e.clientY - rect.top) * 800 / rect.height - PAD;
@@ -691,6 +714,14 @@
     });
 
     async function applyMove(move) {
+      // Online: send our own move before animating it so the opponent's board
+      // advances in step with ours. `applyingRemote` guards against echoing a
+      // move we are merely replaying. Both peers then run this same
+      // deterministic function (including the multi-jump continuation below),
+      // so no extra state needs to cross the wire — only the move itself.
+      if (S.online && !S.applyingRemote && window.onlineMode_checkers) {
+        window.onlineMode_checkers.reportMove(move);
+      }
       stopTimer();
       S.animating = true;
       const piece = S.board[move.from.row][move.from.col];
@@ -752,11 +783,21 @@
       S.gameOver = true;
       S.winner = winner;
       stopTimer();
-      const won = winner === DARK;
+      // Online: the local player is whichever side we were dealt. This used to
+      // be hardcoded to DARK, so the guest (LIGHT) saw "Victory" on a loss.
+      const won = S.online ? winner === S.mySide : winner === DARK;
+
+      // Online: report the result once so the backend settles the wager. Both
+      // clients detect the end deterministically, so only the player who made
+      // the final move reports it (actor authority) to avoid a double settle.
+      if (S.online && !S.applyingRemote && window.onlineMode_checkers) {
+        window.onlineMode_checkers.reportGameOver(winner);
+      }
+
       if (window.gameCommon && window.gameCommon.started) {
         saveResult(winner);
         if (won) confetti();
-        window.gameCommon.showResult(won, `<b>${winner === DARK ? 'Dark' : 'Light'}</b> wins the match.`);
+        window.gameCommon.showResult(won, `<b>${sideName(winner)}</b> wins the match.`);
         return;
       }
       setBanner(won ? 'Victory!' : 'Defeat', winner);
@@ -888,6 +929,40 @@
       if (window.gameCommon && window.gameCommon.startGamePlay) window.gameCommon.startGamePlay();
     }
 
+    // ---- Online bridge -----------------------------------------------------
+    // The engine lives in this closure, so expose the minimum surface that
+    // games/checkers-online.js needs to start a match, replay the opponent's
+    // move, and read/write turn state. Nothing else is published.
+    window.checkersApi = {
+      DARK, LIGHT,
+      state: S,
+      applyMove,          // the single funnel every move goes through
+      resetGame,
+      startTurn,
+      renderPlayers,
+      renderHighlights,
+      buildBoard,
+      initBoardState,
+      setBanner,
+      setHint,
+      log,
+      stopTimer,
+      countPieces,
+      sideName,
+      // Replay an opponent move without re-broadcasting it.
+      // Must AWAIT applyMove: it is async, and finishGame() runs after those
+      // awaits. If the flag cleared early, the replaying client would also
+      // report the result and the wager would settle twice.
+      async applyRemoteMove(move) {
+        S.applyingRemote = true;
+        try {
+          await applyMove(move);
+        } finally {
+          S.applyingRemote = false;
+        }
+      }
+    };
+
     function showMenu() {
       stopTimer();
       $('menuModal').classList.add('show');
@@ -898,8 +973,15 @@
     }
     function pickMode(mode) {
       $('menuModal').classList.remove('show');
-      if (mode === 'ai') $('aiModal').classList.add('show');
-      else resetGame('local');
+      if (mode === 'ai') {
+        $('aiModal').classList.add('show');
+      } else if (mode === 'online') {
+        // Online has its own matchmaking + wager flow inside the OnlineMode
+        // modal, so it must not go through startWithWager().
+        window.onlineMode_checkers?.showModal();
+      } else {
+        window.gameCommon.startWithWager(() => resetGame('local'));
+      }
     }
     document.querySelectorAll('.diff-btn').forEach(btn => btn.addEventListener('click', () => {
       document.querySelectorAll('.diff-btn').forEach(x => x.classList.remove('selected'));
@@ -908,7 +990,7 @@
     }));
     function startAIGame() {
       $('aiModal').classList.remove('show');
-      resetGame('ai');
+      window.gameCommon.startWithWager(() => resetGame('ai'));
     }
 
     function toggleSound() {
@@ -934,6 +1016,7 @@
     window.gameCommon = new GameCommon({
       gameKey: 'checkers',
       gameName: 'Checkers Clash',
+      autoWagerFlow: false,
       turnTimeLimit: 30,
       rulesHTML: `
         <h3>Objective</h3>
@@ -948,6 +1031,17 @@
       onExit: function () { window.location.href = '../index.html'; }
     });
     window.gameCommon.init();
-  </script>
+
+    </script>
+
+    <!-- Online (Quick-Match) mode. Loaded after game-common.js so the
+         CheckersOnline constructor can pick up window.gameCommon, and after the
+         engine script above so window.checkersApi already exists. -->
+    <script src="checkers-online.js?v=9"></script>
+    <script>
+      if (window.CheckersOnline) {
+        window.onlineMode_checkers = new CheckersOnline();
+      }
+    </script>
 </body>
 </html>
