@@ -1,0 +1,976 @@
+/* ==========================================================================
+   ArenaX — Premium Live Marketplace (P2P Exchange) Design System
+   ========================================================================== */
+
+/* --- Container & Frame Styling --- */
+#section-live-orders {
+  animation: fadeIn 0.4s ease-out;
+}
+
+.live-orders-frame {
+  background: rgba(14, 14, 20, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 225, 150, 0.12);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+  margin-top: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.live-orders-frame::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(216, 164, 59, 0.5), transparent);
+}
+
+.live-orders-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.live-pulse {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(83, 220, 147, 0.1);
+  border: 1px solid rgba(83, 220, 147, 0.25);
+  padding: 6px 14px;
+  border-radius: 30px;
+  color: #53dc93;
+  font-family: var(--font-display, "Orbitron", sans-serif);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  background: #53dc93;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #53dc93;
+  animation: p2pPulse 1.8s infinite;
+}
+
+@keyframes p2pPulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(83, 220, 147, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(83, 220, 147, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(83, 220, 147, 0); }
+}
+
+.live-orders-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted, #b7ab95);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.live-orders-meta::before {
+  content: '🛡️';
+  font-size: 14px;
+}
+
+/* --- P2P Top Navigation Bar --- */
+.p2p-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.p2p-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(8, 8, 12, 0.7);
+  padding: 5px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.p2p-tab {
+  background: transparent;
+  border: none;
+  color: var(--muted, #b7ab95);
+  font-family: var(--font-body, "Inter", sans-serif);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.p2p-tab:hover {
+  color: #faf5ea;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.p2p-tab.active {
+  color: #060608;
+  background: var(--gold-gradient, linear-gradient(135deg,#fff2b8 0%,#d8a43b 45%,#8b6118 100%));
+  font-weight: 700;
+  box-shadow: 0 4px 20px rgba(216, 164, 59, 0.35);
+}
+
+.p2p-dot {
+  background: #f25c5c;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 8px rgba(242, 92, 92, 0.6);
+}
+
+.p2p-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.p2p-balance {
+  background: rgba(24, 24, 34, 0.8);
+  border: 1px solid rgba(255, 225, 150, 0.15);
+  padding: 8px 16px;
+  border-radius: 14px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.p2p-balance span {
+  color: var(--muted, #b7ab95);
+}
+
+.p2p-balance strong {
+  color: var(--gold-light, #ffe7a6);
+  font-family: var(--font-display, "Orbitron", sans-serif);
+  font-size: 14px;
+}
+
+.p2p-escrow {
+  background: rgba(216, 164, 59, 0.15);
+  color: var(--gold, #d8a43b);
+  border: 1px solid rgba(216, 164, 59, 0.3);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+#p2pPostBtn {
+  background: linear-gradient(135deg, #fff2b8 0%, #d8a43b 50%, #8b6118 100%);
+  color: #060608;
+  border: none;
+  font-family: var(--font-body, "Inter", sans-serif);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 22px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 18px rgba(216, 164, 59, 0.3);
+}
+
+#p2pPostBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(216, 164, 59, 0.5);
+  filter: brightness(1.1);
+}
+
+/* --- Filter Chips Bar --- */
+.p2p-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(216, 164, 59, 0.2) transparent;
+}
+
+.p2p-filters-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted, #b7ab95);
+  margin-right: 6px;
+  white-space: nowrap;
+}
+
+.p2p-chip {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--muted, #b7ab95);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.p2p-chip:hover {
+  border-color: rgba(216, 164, 59, 0.3);
+  color: #faf5ea;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.p2p-chip.active {
+  background: rgba(216, 164, 59, 0.18);
+  border-color: rgba(216, 164, 59, 0.6);
+  color: var(--gold-light, #ffe7a6);
+  font-weight: 600;
+  box-shadow: 0 0 12px rgba(216, 164, 59, 0.15);
+}
+
+/* --- Order Book Table --- */
+.p2p-table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.p2p-row {
+  display: grid;
+  grid-template-columns: 2fr 1.3fr 1.4fr 1.5fr 2fr 100px;
+  align-items: center;
+  padding: 14px 20px;
+  background: rgba(20, 20, 28, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  font-size: 14px;
+}
+
+.p2p-row.head {
+  background: rgba(10, 10, 14, 0.6);
+  border: none;
+  padding: 10px 20px;
+  color: var(--muted-2, #7d7263);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.p2p-row:not(.head):hover {
+  background: rgba(30, 30, 42, 0.8);
+  border-color: rgba(216, 164, 59, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.p2p-trader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.p2p-trader b {
+  color: #faf5ea;
+  font-weight: 600;
+  display: block;
+}
+
+.p2p-trader small {
+  color: var(--muted-2, #7d7263);
+  font-size: 11px;
+}
+
+.p2p-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(216, 164, 59, 0.2), rgba(139, 97, 24, 0.3));
+  border: 1.5px solid rgba(216, 164, 59, 0.4);
+  color: var(--gold-light, #ffe7a6);
+  font-family: var(--font-display, "Orbitron", sans-serif);
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.p2p-avatar.lg {
+  width: 48px;
+  height: 48px;
+  font-size: 18px;
+}
+
+.p2p-price {
+  font-family: var(--font-display, "Orbitron", sans-serif);
+  font-weight: 700;
+  font-size: 15px;
+  color: #faf5ea;
+}
+
+.p2p-row.sell .p2p-price {
+  color: #53dc93;
+}
+
+.p2p-row.buy .p2p-price {
+  color: var(--gold, #d8a43b);
+}
+
+.p2p-amount {
+  font-weight: 600;
+  color: #faf5ea;
+}
+
+.p2p-limits {
+  color: var(--muted, #b7ab95);
+  font-size: 13px;
+}
+
+.p2p-methods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.p2p-methods i {
+  font-style: normal;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--muted, #b7ab95);
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* Action Buttons inside Rows */
+.p2p-row .btn {
+  width: 100%;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.p2p-row .btn:not(.danger):not(.secondary) {
+  background: linear-gradient(135deg, #53dc93 0%, #22a361 100%);
+  color: #060608;
+  box-shadow: 0 4px 14px rgba(83, 220, 147, 0.3);
+}
+
+.p2p-row .btn:not(.danger):not(.secondary):hover {
+  box-shadow: 0 6px 20px rgba(83, 220, 147, 0.5);
+  transform: translateY(-1px);
+}
+
+.p2p-row .btn.danger {
+  background: linear-gradient(135deg, #f25c5c 0%, #c0392b 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(242, 92, 92, 0.3);
+}
+
+.p2p-row .btn.danger:hover {
+  box-shadow: 0 6px 20px rgba(242, 92, 92, 0.5);
+  transform: translateY(-1px);
+}
+
+.p2p-row .btn.secondary {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #faf5ea;
+}
+
+.p2p-row .btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.p2p-side {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  width: fit-content;
+}
+
+.p2p-side.sell {
+  background: rgba(242, 92, 92, 0.15);
+  color: #f25c5c;
+  border: 1px solid rgba(242, 92, 92, 0.3);
+}
+
+.p2p-side.buy {
+  background: rgba(83, 220, 147, 0.15);
+  color: #53dc93;
+  border: 1px solid rgba(83, 220, 147, 0.3);
+}
+
+.p2p-status {
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.p2p-status.pending_payment {
+  background: rgba(216, 164, 59, 0.15);
+  color: var(--gold, #d8a43b);
+  border: 1px solid rgba(216, 164, 59, 0.3);
+}
+
+.p2p-status.paid {
+  background: rgba(111, 215, 255, 0.15);
+  color: var(--cyan, #6fd7ff);
+  border: 1px solid rgba(111, 215, 255, 0.3);
+}
+
+.p2p-status.completed {
+  background: rgba(83, 220, 147, 0.15);
+  color: #53dc93;
+  border: 1px solid rgba(83, 220, 147, 0.3);
+}
+
+.p2p-status.cancelled, .p2p-status.disputed {
+  background: rgba(242, 92, 92, 0.15);
+  color: #f25c5c;
+  border: 1px solid rgba(242, 92, 92, 0.3);
+}
+
+/* --- Trade Room UI --- */
+.p2p-trade {
+  animation: fadeIn 0.3s ease;
+}
+
+.p2p-trade-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.p2p-trade-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.p2p-trade-title b {
+  font-family: var(--font-display, "Orbitron", sans-serif);
+  font-size: 18px;
+  color: #faf5ea;
+}
+
+.p2p-timer {
+  background: rgba(242, 92, 92, 0.15);
+  color: #f25c5c;
+  border: 1px solid rgba(242, 92, 92, 0.3);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.p2p-trade-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .p2p-trade-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.p2p-trade-main {
+  background: rgba(20, 20, 28, 0.6);
+  border: 1px solid rgba(255, 225, 150, 0.1);
+  border-radius: 20px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Stepper */
+.p2p-steps {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.p2p-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(10, 10, 14, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-2, #7d7263);
+}
+
+.p2p-step.done {
+  border-color: rgba(83, 220, 147, 0.4);
+  background: rgba(83, 220, 147, 0.08);
+  color: #53dc93;
+}
+
+.p2p-step.current {
+  border-color: rgba(216, 164, 59, 0.5);
+  background: rgba(216, 164, 59, 0.1);
+  color: var(--gold-light, #ffe7a6);
+}
+
+.p2p-step-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 11px;
+}
+
+.p2p-step.done .p2p-step-dot {
+  background: #53dc93;
+  color: #060608;
+}
+
+.p2p-step.current .p2p-step-dot {
+  background: var(--gold, #d8a43b);
+  color: #060608;
+}
+
+/* Summary Grid */
+.p2p-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  background: rgba(10, 10, 14, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 18px;
+  border-radius: 16px;
+}
+
+.p2p-summary div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.p2p-summary span {
+  font-size: 12px;
+  color: var(--muted, #b7ab95);
+  font-weight: 500;
+}
+
+.p2p-summary strong {
+  font-size: 15px;
+  color: #faf5ea;
+  font-weight: 700;
+}
+
+.p2p-total {
+  font-family: var(--font-display, "Orbitron", sans-serif);
+  color: var(--gold-light, #ffe7a6) !important;
+  font-size: 18px !important;
+}
+
+/* Note Alert */
+.p2p-note {
+  background: rgba(216, 164, 59, 0.08);
+  border-left: 4px solid var(--gold, #d8a43b);
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #faf5ea;
+}
+
+/* Trade Room Actions */
+.p2p-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.p2p-actions .btn {
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.p2p-actions .btn.success {
+  background: linear-gradient(135deg, #53dc93 0%, #22a361 100%);
+  color: #060608;
+  border: none;
+  box-shadow: 0 4px 18px rgba(83, 220, 147, 0.4);
+}
+
+.p2p-actions .btn.success:hover {
+  box-shadow: 0 8px 25px rgba(83, 220, 147, 0.6);
+  transform: translateY(-2px);
+}
+
+/* Chat Box */
+.p2p-chat {
+  background: rgba(14, 14, 20, 0.8);
+  border: 1px solid rgba(255, 225, 150, 0.12);
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  height: 480px;
+  overflow: hidden;
+}
+
+.p2p-chat-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(8, 8, 12, 0.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.p2p-chat-head b {
+  color: #faf5ea;
+  font-size: 15px;
+  display: block;
+}
+
+.p2p-chat-head small {
+  color: var(--muted, #b7ab95);
+  font-size: 11px;
+}
+
+.p2p-chat-log {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.p2p-msg {
+  max-width: 82%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(30, 30, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: #faf5ea;
+  font-size: 13px;
+  line-height: 1.45;
+  position: relative;
+  align-self: flex-start;
+}
+
+.p2p-msg.mine {
+  align-self: flex-end;
+  background: linear-gradient(135deg, rgba(139, 97, 24, 0.35) 0%, rgba(216, 164, 59, 0.25) 100%);
+  border-color: rgba(216, 164, 59, 0.3);
+}
+
+.p2p-msg.system {
+  align-self: center;
+  max-width: 90%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  color: var(--muted, #b7ab95);
+  font-size: 12px;
+  text-align: center;
+  border-radius: 20px;
+  padding: 6px 14px;
+}
+
+.p2p-msg small {
+  display: block;
+  font-weight: 700;
+  color: var(--gold-light, #ffe7a6);
+  font-size: 11px;
+  margin-bottom: 3px;
+}
+
+.p2p-msg time {
+  display: block;
+  font-size: 10px;
+  color: var(--muted-2, #7d7263);
+  margin-top: 4px;
+  text-align: right;
+}
+
+.p2p-chat-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: rgba(8, 8, 12, 0.8);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.p2p-attach {
+  font-size: 18px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  padding: 4px;
+}
+
+.p2p-attach:hover {
+  opacity: 1;
+}
+
+.p2p-chat-form input.input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #faf5ea;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.p2p-chat-form input.input:focus {
+  border-color: var(--gold, #d8a43b);
+  outline: none;
+}
+
+/* --- Modals Styling --- */
+.p2p-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 4, 6, 0.82);
+  backdrop-filter: blur(16px);
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.p2p-modal.show {
+  display: flex;
+}
+
+.p2p-modal .modal {
+  background: rgba(18, 18, 24, 0.95);
+  border: 1px solid rgba(255, 225, 150, 0.2);
+  border-radius: 24px;
+  width: 100%;
+  max-width: 540px;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.7), 0 0 40px rgba(216, 164, 59, 0.15);
+  overflow: hidden;
+  animation: modalPop 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes modalPop {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.p2p-modal .modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.p2p-modal .modal-head h3 {
+  font-family: var(--font-display, "Orbitron", sans-serif);
+  font-size: 18px;
+  color: #faf5ea;
+}
+
+.p2p-modal .modal-x {
+  background: transparent;
+  border: none;
+  color: var(--muted, #b7ab95);
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.p2p-modal .modal-x:hover {
+  color: #faf5ea;
+}
+
+.p2p-modal .modal-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.p2p-modal .modal-foot {
+  padding: 16px 24px;
+  background: rgba(10, 10, 14, 0.6);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.p2p-sidepick {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  background: rgba(10, 10, 14, 0.6);
+  padding: 4px;
+  border-radius: 12px;
+}
+
+.p2p-sidepick label {
+  text-align: center;
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted, #b7ab95);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.p2p-sidepick label.active {
+  background: var(--gold-gradient, linear-gradient(135deg,#fff2b8 0%,#d8a43b 45%,#8b6118 100%));
+  color: #060608;
+}
+
+.p2p-sidepick input {
+  display: none;
+}
+
+.p2p-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.p2p-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted, #b7ab95);
+}
+
+.p2p-form .input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #faf5ea;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.p2p-form .input:focus {
+  border-color: var(--gold, #d8a43b);
+  outline: none;
+  box-shadow: 0 0 10px rgba(216, 164, 59, 0.2);
+}
+
+.p2p-methods-pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.p2p-method-chip {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--muted, #b7ab95);
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.p2p-method-chip.active {
+  background: rgba(216, 164, 59, 0.2);
+  border-color: var(--gold, #d8a43b);
+  color: var(--gold-light, #ffe7a6);
+  font-weight: 700;
+}
+
+.p2p-hint {
+  font-size: 12px;
+  color: var(--muted, #b7ab95);
+  background: rgba(216, 164, 59, 0.08);
+  border: 1px solid rgba(216, 164, 59, 0.2);
+  padding: 10px;
+  border-radius: 10px;
+  line-height: 1.4;
+}
+
+/* Empty state */
+.p2p-empty {
+  text-align: center;
+  padding: 48px 24px;
+  background: rgba(14, 14, 20, 0.4);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+}
+
+.p2p-empty h3 {
+  font-family: var(--font-display, "Orbitron", sans-serif);
+  font-size: 18px;
+  color: #faf5ea;
+  margin-bottom: 8px;
+}
+
+.p2p-empty p {
+  color: var(--muted, #b7ab95);
+  font-size: 14px;
+  max-width: 440px;
+  margin: 0 auto 16px auto;
+}

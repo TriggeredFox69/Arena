@@ -8,8 +8,8 @@ const router = express.Router();
 const db = require('../db');
 const authMiddleware = require('../middleware/auth');
 
-// Get chat history for a game
-router.get('/:gameId', authMiddleware, (req, res) => {
+// Get chat history for a game (public read for global chat)
+router.get('/:gameId', (req, res) => {
   try {
     const { gameId } = req.params;
 
@@ -42,6 +42,32 @@ router.post('/:messageId/react', authMiddleware, (req, res) => {
   } catch (err) {
     console.error('Add reaction error:', err);
     res.status(500).json({ error: 'Failed to add reaction' });
+  }
+});
+
+// Send a chat message
+router.post('/send', authMiddleware, (req, res) => {
+  try {
+    const { gameId, message } = req.body;
+    if (!gameId || !message) return res.status(400).json({ error: 'gameId and message required' });
+
+    const stmt = db.prepare('INSERT INTO chat_messages (user_id, game_id, message) VALUES (?, ?, ?)');
+    const result = stmt.run(req.userId, String(gameId), String(message).trim());
+
+    res.json({
+      success: true,
+      message: {
+        id: result.lastInsertRowid,
+        userId: req.userId,
+        gameId,
+        message: String(message).trim(),
+        username: req.user ? req.user.username : 'Player',
+        createdAt: new Date().toISOString()
+      }
+    });
+  } catch (err) {
+    console.error('Send chat error:', err);
+    res.status(500).json({ error: 'Failed to send message' });
   }
 });
 

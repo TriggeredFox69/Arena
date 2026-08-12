@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/live_marketplace.css" />
   <style>
     :root {
       --bg: #060608;
@@ -1503,18 +1504,23 @@
 
     .mobile-menu {
       display: none;
-      position: fixed;
-      left: 16px;
-      bottom: 16px;
-      z-index: 95;
-      width: 54px; height: 54px;
+      position: fixed !important;
+      left: 20px !important;
+      bottom: 20px !important;
+      z-index: 99990 !important;
+      width: 56px !important; height: 56px !important;
       padding: 0;
-      border-radius: 50%;
-      font-size: 21px;
+      border-radius: 50% !important;
+      font-size: 22px !important;
       place-items: center;
-      box-shadow: 0 14px 34px rgba(0,0,0,.5), var(--gold-glow);
+      background: var(--gold-gradient) !important;
+      color: #140d04 !important;
+      box-shadow: 0 12px 36px rgba(0,0,0,.6), 0 0 25px rgba(216,164,59,.4) !important;
+      cursor: pointer !important;
+      pointer-events: auto !important;
+      border: 1px solid rgba(255,255,255,.4) !important;
     }
-    .mobile-menu.hide { display: none; }
+    .mobile-menu.hide { display: none !important; }
     .sidebar-close {
       display: none;
       position: absolute;
@@ -1534,31 +1540,41 @@
     .sidebar-close:hover { background: rgba(242,92,92,.2); border-color: rgba(242,92,92,.4); color: #ffc4c4; }
     .mobile-overlay {
       display: none;
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,.55);
-      backdrop-filter: blur(3px);
-      z-index: 60;
+      position: fixed !important; inset: 0 !important;
+      background: rgba(0,0,0,.75) !important;
+      backdrop-filter: blur(6px) !important;
+      -webkit-backdrop-filter: blur(6px) !important;
+      z-index: 99980 !important;
+      pointer-events: auto !important;
     }
-    .mobile-overlay.show { display: block; }
+    .mobile-overlay.show { display: block !important; }
 
     @media (max-width: 1180px) {
       .app, .layout, .hero, .grid-2, .stats-grid, .game-tiles, .widget-row, .room-steps, .market-book-grid, .market-form-grid, .market-filter-grid, .market-inline-grid, .market-exchange-layout, .market-pair-stats, .market-book-panels, .market-flow-grid, .market-filter-grid-compact { grid-template-columns: 1fr; }
       .market-pair-hero { flex-direction: column; align-items: flex-start; }
       .sidebar {
-        position: fixed;
-        left: 16px;
-        top: 16px;
-        bottom: 16px;
-        width: min(300px, calc(100% - 72px));
-        transform: translateX(calc(-100% - 24px));
-        transition: transform .3s cubic-bezier(.2,.7,.3,1);
-        z-index: 70;
-        height: auto;
-        animation: none; /* entrance animation's fill would override the hide transform */
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        bottom: 0 !important;
+        width: 290px !important;
+        max-width: 85vw !important;
+        height: 100vh !important;
+        border-radius: 0 24px 24px 0 !important;
+        transform: translateX(-100%);
+        transition: transform .3s cubic-bezier(.2,.7,.3,1) !important;
+        z-index: 99999 !important;
+        animation: none !important;
+        box-shadow: 12px 0 60px rgba(0,0,0,.85) !important;
+        background: var(--panel-2) !important;
       }
-      .sidebar.open { transform: translateX(0); }
-      .mobile-menu { display: grid; }
-      .sidebar-close { display: grid; }
+      .sidebar.open {
+        transform: translateX(0) !important;
+        display: flex !important;
+        visibility: visible !important;
+      }
+      .mobile-menu { display: grid !important; }
+      .sidebar-close { display: grid !important; }
       .topbar { border-radius: 24px; }
       .msg { max-width: 92%; }
     }
@@ -1854,12 +1870,12 @@
     <div class="bg-grid"></div>
   </div>
 
-  <button class="btn mobile-menu" id="mobileMenu">☰</button>
+  <button class="btn mobile-menu" id="mobileMenu" onclick="toggleSidebar()" aria-label="Toggle mobile menu">☰</button>
   <div class="mobile-overlay" id="mobileOverlay" onclick="closeSidebar()"></div>
 
   <div class="app hidden" id="app">
     <aside class="sidebar" id="sidebar">
-      <button class="sidebar-close" id="sidebarClose" title="Close menu">✕</button>
+      <button class="sidebar-close" id="sidebarClose" onclick="closeSidebar()" title="Close menu">✕</button>
       <div class="brand">
         <div class="brand-mark">X</div>
         <div class="brand-copy">
@@ -2641,14 +2657,32 @@
         <div class="section-head">
           <div>
             <h2>Global Chat</h2>
-            <p>Custom messages and emoji reactions for the community.</p>
+            <p>Real-time community chat. Broadcast messages live to all online players.</p>
           </div>
-          <div class="pill"><span class="clock-dot"></span><span id="chatCount">0</span>&nbsp;online</div>
+          <div class="pill live-online-pill" style="display:inline-flex;align-items:center;gap:8px;background:rgba(83,220,147,.12);border:1px solid rgba(83,220,147,.3);color:#53dc93;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;">
+            <span class="pulse-dot" style="width:8px;height:8px;background:#53dc93;border-radius:50%;box-shadow:0 0 8px #53dc93;display:inline-block;"></span>
+            <span id="chatCount">1</span>&nbsp;online
+          </div>
         </div>
         <div class="chat-box">
           <div class="chat-messages" id="chatMessages"></div>
+          <div class="chat-quick-emojis" style="display:flex;gap:8px;padding:8px 14px;background:rgba(10,10,14,.6);border-top:1px solid rgba(255,255,255,.05);overflow-x:auto;">
+            <button class="emoji-chip" onclick="addEmoji('🔥')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:12px;cursor:pointer;font-size:14px;transition:all .2s;">🔥</button>
+            <button class="emoji-chip" onclick="addEmoji('🚀')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:12px;cursor:pointer;font-size:14px;transition:all .2s;">🚀</button>
+            <button class="emoji-chip" onclick="addEmoji('👑')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:12px;cursor:pointer;font-size:14px;transition:all .2s;">👑</button>
+            <button class="emoji-chip" onclick="addEmoji('🎮')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:12px;cursor:pointer;font-size:14px;transition:all .2s;">🎮</button>
+            <button class="emoji-chip" onclick="addEmoji('💰')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:12px;cursor:pointer;font-size:14px;transition:all .2s;">💰</button>
+            <button class="emoji-chip" onclick="addEmoji('👍')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:12px;cursor:pointer;font-size:14px;transition:all .2s;">👍</button>
+            <button class="emoji-chip" onclick="addEmoji('❤️')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:12px;cursor:pointer;font-size:14px;transition:all .2s;">❤️</button>
+            <button class="emoji-chip" onclick="addEmoji('😂')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:12px;cursor:pointer;font-size:14px;transition:all .2s;">😂</button>
+            <button class="emoji-chip" onclick="addEmoji('⚡')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:12px;cursor:pointer;font-size:14px;transition:all .2s;">⚡</button>
+          </div>
+          <div id="chatReplyBanner" style="display:none;background:rgba(216,164,59,.14);border-left:3px solid #d8a43b;padding:6px 12px;border-radius:8px;font-size:12px;margin:6px 14px;align-items:center;justify-content:space-between;color:#ffe7a6;">
+            <span id="chatReplyText"></span>
+            <button onclick="cancelReply()" style="background:none;border:none;color:#b7ab95;cursor:pointer;font-size:14px;">✕</button>
+          </div>
           <div class="chat-input">
-            <input id="chatInput" placeholder="Say something... 😀">
+            <input id="chatInput" placeholder="Say something in global chat... 😀">
             <button class="btn" onclick="sendChat()">➤</button>
           </div>
         </div>
@@ -2983,7 +3017,51 @@
     function saveUser(){ localStorage.setItem('arenax_user', JSON.stringify(user)); }
     function el(id){ return document.getElementById(id); }
     function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-    function closeSidebar(){}
+    function openSidebar(){
+      console.log('[Sidebar] Opening mobile sidebar...');
+      const sb = el('sidebar');
+      const ov = el('mobileOverlay');
+      if (sb) {
+        sb.classList.add('open');
+        sb.setAttribute('style', 'display: flex !important; transform: translateX(0px) !important; visibility: visible !important; position: fixed !important; left: 0px !important; top: 0px !important; bottom: 0px !important; width: 290px !important; max-width: 85vw !important; z-index: 99999 !important; background: rgba(18,18,24,0.98) !important; box-shadow: 12px 0 60px rgba(0,0,0,0.95) !important;');
+      }
+      if (ov) {
+        ov.classList.add('show');
+        ov.setAttribute('style', 'display: block !important; position: fixed !important; inset: 0px !important; background: rgba(0,0,0,0.75) !important; backdrop-filter: blur(6px) !important; -webkit-backdrop-filter: blur(6px) !important; z-index: 99980 !important;');
+      }
+    }
+    function closeSidebar(){
+      console.log('[Sidebar] Closing mobile sidebar...');
+      const sb = el('sidebar');
+      const ov = el('mobileOverlay');
+      if (sb) {
+        sb.classList.remove('open');
+        sb.removeAttribute('style');
+      }
+      if (ov) {
+        ov.classList.remove('show');
+        ov.removeAttribute('style');
+      }
+    }
+    let lastSidebarToggleTime = 0;
+    function toggleSidebar(e){
+      if (e) {
+        try { e.preventDefault(); e.stopPropagation(); } catch(err){}
+      }
+      const now = Date.now();
+      if (now - lastSidebarToggleTime < 350) return; // Prevent double-trigger from touch + click in 1ms
+      lastSidebarToggleTime = now;
+
+      const sb = el('sidebar');
+      if (sb && (sb.classList.contains('open') || sb.getAttribute('style')?.includes('translateX(0)'))) {
+        closeSidebar();
+      } else {
+        openSidebar();
+      }
+    }
+    window.toggleSidebar = toggleSidebar;
+    window.openSidebar = openSidebar;
+    window.closeSidebar = closeSidebar;
     let pendingGamePath = '';
     function openGame(path){
       pendingGamePath = path;
@@ -3038,27 +3116,380 @@
       const finalItems = JSON.parse(localStorage.getItem('arenax_activity') || '[]');
       feed.innerHTML = finalItems.slice(0, 6).map(item => `<div class="activity-item"><span>${item.icon}</span><span>${esc(item.text)}</span></div>`).join('');
     }
-    function renderChat(){
+    // ===== Global Realtime Online Chat =====
+    let globalChatChannel = null;
+    let chatMessagesList = [];
+    let currentReplyTo = null;
+    let chatPollTimer = null;
+    let lastRenderedChatHtml = '';
+    const chatLocalBc = (typeof BroadcastChannel !== 'undefined') ? new BroadcastChannel('arenax_global_chat_channel') : null;
+
+    if (chatLocalBc) {
+      chatLocalBc.onmessage = (e) => {
+        if (e.data && e.data.type === 'chat_message' && e.data.payload) {
+          receiveChatMessage(e.data.payload);
+        } else if (e.data && e.data.type === 'chat_reaction' && e.data.payload) {
+          handleIncomingReaction(e.data.payload);
+        }
+      };
+    }
+
+    async function fetchNewChatMessages() {
+      const sb = typeof getSupabase === 'function' ? getSupabase() : null;
+      let fetched = [];
+
+      if (sb) {
+        try {
+          const { data, error } = await sb
+            .from('chat_messages')
+            .select('id, user_id, message, created_at, users(username)')
+            .order('created_at', { ascending: false })
+            .limit(40);
+
+          if (!error && data && data.length) {
+            fetched = data.reverse().map(m => ({
+              id: String(m.id),
+              name: Array.isArray(m.users) ? m.users[0]?.username : (m.users?.username || 'Player'),
+              text: m.message,
+              time: m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'
+            }));
+          }
+        } catch (e) {}
+      }
+
+      if (!fetched.length && window.api && typeof window.api.request === 'function') {
+        try {
+          const res = await window.api.request('GET', '/chat/global');
+          if (res && res.messages && res.messages.length) {
+            fetched = res.messages.map(m => ({
+              id: String(m.id || ('api-' + m.createdAt)),
+              name: m.username || m.name || 'Player',
+              text: m.message,
+              time: m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'
+            }));
+          }
+        } catch (e) {}
+      }
+
+      if (!fetched.length) return;
+
+      let updated = false;
+      for (const item of fetched) {
+        const match = chatMessagesList.find(x => String(x.id) === item.id || (x.name === item.name && x.text === item.text));
+        if (match) {
+          if (match.id !== item.id) {
+            match.id = item.id;
+            updated = true;
+          }
+        } else {
+          chatMessagesList.push({
+            id: item.id,
+            name: item.name,
+            text: item.text,
+            time: item.time,
+            reactions: {}
+          });
+          updated = true;
+        }
+      }
+
+      if (updated) {
+        if (chatMessagesList.length > 60) chatMessagesList = chatMessagesList.slice(-60);
+        localStorage.setItem('arenax_chat', JSON.stringify(chatMessagesList));
+        renderChat(false);
+      }
+    }
+
+    async function initGlobalChat() {
+      const stored = localStorage.getItem('arenax_chat');
+      if (stored) {
+        try { chatMessagesList = JSON.parse(stored); } catch (e) { chatMessagesList = []; }
+      }
+
+      const sb = typeof getSupabase === 'function' ? getSupabase() : null;
+
+      if (sb) {
+        try {
+          const { data, error } = await sb
+            .from('chat_messages')
+            .select('id, user_id, message, created_at, users(username)')
+            .order('created_at', { ascending: false })
+            .limit(40);
+
+          if (!error && data && data.length) {
+            chatMessagesList = data.reverse().map(m => ({
+              id: String(m.id || ('msg-' + Math.random().toString(36).slice(2, 9))),
+              name: Array.isArray(m.users) ? m.users[0]?.username : (m.users?.username || 'Player'),
+              text: m.message,
+              time: m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
+              reactions: {}
+            }));
+            localStorage.setItem('arenax_chat', JSON.stringify(chatMessagesList));
+          }
+        } catch (e) {}
+      }
+
+      if (!chatMessagesList.length) {
+        chatMessagesList.push({
+          id: 'welcome-bot',
+          name: 'ArenaBot',
+          text: 'Welcome to ArenaX Global Chat! 🔥 Trade AX, invite friends, react, and reply live.',
+          time: 'Just now',
+          reactions: { '🔥': 3, '👑': 1 }
+        });
+      }
+
+      renderChat(true);
+      fetchNewChatMessages();
+
+      if (!chatPollTimer) {
+        chatPollTimer = setInterval(fetchNewChatMessages, 2000);
+      }
+
+      if (sb && !globalChatChannel) {
+        try {
+          const channelId = 'arenax-global-chat';
+          globalChatChannel = sb.channel(channelId, {
+            config: {
+              broadcast: { self: true },
+              presence: { key: (user.id || user.uid || 'anon') + '_' + Math.floor(Math.random()*1000) }
+            }
+          });
+
+          globalChatChannel.on('broadcast', { event: 'chat_message' }, ({ payload }) => {
+            if (payload && payload.text) receiveChatMessage(payload);
+          });
+
+          globalChatChannel.on('broadcast', { event: 'chat_reaction' }, ({ payload }) => {
+            if (payload && payload.id && payload.emoji) handleIncomingReaction(payload);
+          });
+
+          globalChatChannel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, (payload) => {
+            if (payload.new && payload.new.message) {
+              receiveChatMessage({
+                id: String(payload.new.id),
+                name: payload.new.username || 'Player',
+                text: payload.new.message,
+                time: new Date(payload.new.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              });
+            }
+          });
+
+          globalChatChannel.on('presence', { event: 'sync' }, () => {
+            const state = globalChatChannel.presenceState();
+            const count = Object.keys(state).length;
+            const countEl = el('chatCount');
+            if (countEl) countEl.textContent = Math.max(1, count);
+          });
+
+          globalChatChannel.subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+              try {
+                await globalChatChannel.track({
+                  username: user.username || 'Guest',
+                  onlineAt: new Date().toISOString()
+                });
+              } catch (e) {}
+            }
+          });
+        } catch (e) {
+          console.warn('[chat] realtime subscription error', e);
+        }
+      }
+
+      if (window.socketClient && typeof window.socketClient.on === 'function') {
+        window.socketClient.on('chat_message', (data) => {
+          if (data && data.message) {
+            receiveChatMessage({ id: String(data.id || data.createdAt), name: data.username || 'Player', text: data.message });
+          }
+        });
+      }
+    }
+
+    function receiveChatMessage(msg) {
+      if (!msg.id) msg.id = 'msg-' + Date.now() + '-' + Math.floor(Math.random()*1000);
+      const existingIdx = chatMessagesList.findIndex(m => String(m.id) === String(msg.id) || (m.name === msg.name && m.text === msg.text));
+      if (existingIdx !== -1) {
+        chatMessagesList[existingIdx] = { ...chatMessagesList[existingIdx], ...msg };
+      } else {
+        msg._ts = Date.now();
+        chatMessagesList.push(msg);
+        if (chatMessagesList.length > 60) chatMessagesList.shift();
+      }
+      localStorage.setItem('arenax_chat', JSON.stringify(chatMessagesList));
+      renderChat(false);
+    }
+
+    function handleIncomingReaction({ id, emoji }) {
+      const msg = chatMessagesList.find(m => String(m.id) === String(id));
+      if (!msg) return;
+      if (!msg.reactions) msg.reactions = {};
+      msg.reactions[emoji] = (msg.reactions[emoji] || 0) + 1;
+      localStorage.setItem('arenax_chat', JSON.stringify(chatMessagesList));
+      renderChat(false);
+    }
+
+    function reactToMessage(id, emoji) {
+      handleIncomingReaction({ id, emoji });
+      chatLocalBc?.postMessage({ type: 'chat_reaction', payload: { id, emoji, username: user.username || 'Guest' } });
+      if (globalChatChannel) {
+        try {
+          globalChatChannel.send({
+            type: 'broadcast',
+            event: 'chat_reaction',
+            payload: { id, emoji, username: user.username || 'Guest' }
+          });
+        } catch (e) {}
+      }
+    }
+
+    function setReplyTo(id) {
+      const msg = chatMessagesList.find(m => String(m.id) === String(id));
+      if (!msg) return;
+      currentReplyTo = { id: msg.id, name: msg.name, text: msg.text };
+      const banner = el('chatReplyBanner');
+      const textEl = el('chatReplyText');
+      if (banner && textEl) {
+        textEl.innerHTML = `Replying to <b>@${esc(msg.name)}</b>: "${esc(msg.text.slice(0, 35))}${msg.text.length > 35 ? '...' : ''}"`;
+        banner.style.display = 'flex';
+      }
+      el('chatInput')?.focus();
+    }
+
+    function cancelReply() {
+      currentReplyTo = null;
+      const banner = el('chatReplyBanner');
+      if (banner) banner.style.display = 'none';
+    }
+
+    function addEmoji(emoji) {
+      const input = el('chatInput');
+      if (!input) return;
+      input.value = (input.value ? input.value + ' ' : '') + emoji;
+      input.focus();
+    }
+
+    function renderChat(forceScroll = false){
       const box = el('chatMessages');
       if (!box) return;
-      const msgs = JSON.parse(localStorage.getItem('arenax_chat') || '[]');
-      if (!msgs.length) {
-        msgs.push({ name:'ArenaBot', text:'Welcome to ArenaX! 🔥 Trade AX, invite friends, and dominate the table.' });
-        localStorage.setItem('arenax_chat', JSON.stringify(msgs));
+      if (!chatMessagesList.length) {
+        const stored = localStorage.getItem('arenax_chat');
+        if (stored) { try { chatMessagesList = JSON.parse(stored); } catch(e){} }
       }
-      box.innerHTML = msgs.map(m => `<div class="chat-bubble"><strong>${esc(m.name)}:</strong> ${esc(m.text)}</div>`).join('');
-      box.scrollTop = box.scrollHeight;
+      if (!chatMessagesList.length) {
+        chatMessagesList.push({
+          id: 'welcome-bot',
+          name: 'ArenaBot',
+          text: 'Welcome to ArenaX Global Chat! 🔥 Trade AX, invite friends, react, and reply live.',
+          time: 'Just now',
+          reactions: { '🔥': 3, '👑': 1 }
+        });
+      }
+
+      const myName = user.username || 'Guest';
+      const newHtml = chatMessagesList.map(m => {
+        const isMe = m.name === myName;
+        const rx = m.reactions || {};
+        const rxKeys = Object.keys(rx).filter(k => rx[k] > 0);
+
+        return `
+          <div class="msg ${isMe ? 'me' : ''}" data-msg-id="${esc(m.id || '')}">
+            ${m.replyTo ? `
+              <div class="chat-reply-quote" style="background:rgba(0,0,0,.25);border-left:3px solid #d8a43b;border-radius:6px;padding:4px 8px;font-size:11.5px;color:#b7ab95;margin-bottom:4px;">
+                <small style="color:#ffe7a6">Replying to <b>@${esc(m.replyTo.name)}</b></small>
+                <div style="font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">"${esc(m.replyTo.text)}"</div>
+              </div>
+            ` : ''}
+            <b>${esc(m.name)}</b>
+            <span>${esc(m.text)}</span>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:6px;font-size:11px;color:#7d7263;">
+              <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+                ${rxKeys.map(k => `
+                  <button onclick="reactToMessage('${esc(m.id)}', '${k}')" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);padding:1px 6px;border-radius:10px;font-size:11px;color:#ffe7a6;cursor:pointer;">${k} ${rx[k]}</button>
+                `).join('')}
+                <div class="rx-quick-add" style="display:inline-flex;gap:2px;">
+                  <button onclick="reactToMessage('${esc(m.id)}', '🔥')" style="background:none;border:none;cursor:pointer;font-size:11px;opacity:.7;" title="React 🔥">🔥</button>
+                  <button onclick="reactToMessage('${esc(m.id)}', '❤️')" style="background:none;border:none;cursor:pointer;font-size:11px;opacity:.7;" title="React ❤️">❤️</button>
+                  <button onclick="reactToMessage('${esc(m.id)}', '👍')" style="background:none;border:none;cursor:pointer;font-size:11px;opacity:.7;" title="React 👍">👍</button>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span>${m.time ? esc(m.time) : ''}</span>
+                <button onclick="setReplyTo('${esc(m.id)}')" style="background:none;border:none;color:#b7ab95;font-size:11px;cursor:pointer;font-weight:600;" title="Reply">↩ Reply</button>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+
+      if (newHtml === lastRenderedChatHtml && box.children.length > 0) {
+        return;
+      }
+
+      const wasAtBottom = (box.scrollHeight - box.scrollTop - box.clientHeight) < 80 || box.children.length === 0;
+
+      lastRenderedChatHtml = newHtml;
+      box.innerHTML = newHtml;
+
+      if (forceScroll || wasAtBottom) {
+        box.scrollTop = box.scrollHeight;
+      }
     }
-    function sendChat(){
+
+    async function sendChat(){
       const input = el('chatInput');
       if (!input) return;
       const text = input.value.trim();
       if (!text) return;
-      const msgs = JSON.parse(localStorage.getItem('arenax_chat') || '[]');
-      msgs.push({ name: user.username || 'Guest', text });
-      localStorage.setItem('arenax_chat', JSON.stringify(msgs.slice(-40)));
       input.value = '';
-      renderChat();
+
+      const myName = user.username || 'Guest';
+      const msgId = 'msg-' + Date.now() + '-' + Math.floor(Math.random()*1000);
+      const msgPayload = {
+        id: msgId,
+        name: myName,
+        text,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        replyTo: currentReplyTo ? { name: currentReplyTo.name, text: currentReplyTo.text } : null,
+        reactions: {}
+      };
+
+      cancelReply();
+
+      // 1. Render locally and post to all local tabs instantly (0ms)
+      receiveChatMessage(msgPayload);
+      chatLocalBc?.postMessage({ type: 'chat_message', payload: msgPayload });
+      renderChat(true); // forceScroll = true when sending
+      chatLocalBc?.postMessage({ type: 'chat_message', payload: msgPayload });
+
+      // 2. Broadcast via Supabase Realtime to all online clients
+      if (globalChatChannel) {
+        try {
+          globalChatChannel.send({
+            type: 'broadcast',
+            event: 'chat_message',
+            payload: msgPayload
+          });
+        } catch (e) {}
+      }
+
+      // 3. Persist to Supabase database if logged in
+      const sb = typeof getSupabase === 'function' ? getSupabase() : null;
+      if (sb && user.id) {
+        try {
+          await sb.from('chat_messages').insert({
+            user_id: user.id,
+            game_id: 'global',
+            message: text
+          });
+        } catch (e) {}
+      }
+
+      // 4. Send over REST if active
+      if (window.api && typeof window.api.request === 'function') {
+        try { window.api.request('POST', '/chat/send', { gameId: 'global', message: text }); } catch (e) {}
+      }
+
       pushActivity('💬', 'Sent a chat message');
     }
     // UIDs are shown/copied everywhere at max 8 chars. Accounts with a long
@@ -3469,11 +3900,12 @@
       const gameGrid = el('gameGrid');
       if (gameGrid) gameGrid.innerHTML = upcomingGames.map((g, i) => `<div class="game-item" style="animation-delay:${i*60}ms"><div class="game-icon">${g.emoji}</div><div class="game-copy"><h3>${g.title}</h3><p>${g.meta}</p></div><div class="soon">🔒 Tomorrow</div></div>`).join('');
       renderActivity();
-      renderChat();
+      initGlobalChat();
       renderAirdrop();
     }
 
     function switchSection(section){
+      closeSidebar();
       document.querySelectorAll('.section-view').forEach(s => s.classList.remove('active'));
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
       el('section-' + section)?.classList.add('active');
@@ -3483,6 +3915,7 @@
       if (section === 'marketplace') switchMarketView(marketplaceView, false);
       if (section === 'live-orders') renderLiveOrders();
       if (section === 'airdrop') renderAirdrop();
+      if (section === 'chat') initGlobalChat();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     function switchMarketView(view, notify=true){
@@ -3659,6 +4092,16 @@
     }
 
     document.querySelectorAll('.nav-btn[data-section]').forEach(btn => btn.addEventListener('click', () => switchSection(btn.dataset.section)));
+    const mBtn = el('mobileMenu');
+    if (mBtn) {
+      ['click', 'touchstart', 'pointerdown'].forEach(evt => {
+        mBtn.addEventListener(evt, (e) => {
+          toggleSidebar(e);
+        }, { passive: false });
+      });
+    }
+    if (el('sidebarClose')) el('sidebarClose').addEventListener('click', closeSidebar);
+    if (el('mobileOverlay')) el('mobileOverlay').addEventListener('click', closeSidebar);
     if (el('chatInput')) el('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
 
     function hideSplash(){

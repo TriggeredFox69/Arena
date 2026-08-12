@@ -124,8 +124,9 @@ function initSocket(server) {
           createdAt: new Date().toISOString()
         };
 
-        // Broadcast to game room
+        // Broadcast to game room & global subscribers
         io.to(`game:${gameId}`).emit('chat_message', chatMessage);
+        io.emit('chat_message', chatMessage);
       } catch (err) {
         console.error('[WebSocket] send_message error:', err);
         socket.emit('error', { message: 'Failed to send message' });

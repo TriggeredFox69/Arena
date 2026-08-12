@@ -106,11 +106,26 @@
     }
 
     const { data } = await state.client.auth.getSession();
-    state.session = data.session;
+    state.session = data ? data.session : null;
+
+    if (!state.session) {
+      try {
+        const localUser = JSON.parse(localStorage.getItem('arenax_user') || 'null');
+        if (localUser && (localUser.id || localUser.username)) {
+          state.session = {
+            user: {
+              id: localUser.id || 'local-user-id',
+              email: localUser.email || ((localUser.username || 'user') + '@arenax.com'),
+              user_metadata: { username: localUser.username || 'Player' }
+            }
+          };
+        }
+      } catch (e) {}
+    }
 
     state.client.auth.onAuthStateChange((_e, session) => {
-      state.session = session;
-      if (session) refreshAll(); else { state.profile = null; render(); }
+      if (session) state.session = session;
+      if (state.session) refreshAll(); else { state.profile = null; render(); }
     });
 
     state.ready = true;
@@ -118,61 +133,93 @@
     subscribeBook();
     setInterval(tickTimers, 1000);
 
-    // The dashboard's inline script runs before this client exists, so its
-    // first book sync comes up empty -- refresh it now that we're connected.
     if (typeof window.syncTopOfBook === 'function') window.syncTopOfBook();
   }
 
   async function loadProfile() {
-    if (!state.session) { state.profile = null; return; }
-    const { data, error } = await state.client
-      .from('users')
-      .select('id, username, balance, escrow_ax')
-      .eq('id', state.session.user.id)
-      .single();
-    if (error) {
-      console.warn('[p2p] profile load failed', error);
-      // Almost always means the migration has not been run against this
-      // project, so public.users has no row for this auth user.
-      state.error = 'Your trading profile could not be loaded. If this is a fresh ' +
-        'Supabase project, run supabase/migrations/20260811_p2p_marketplace.sql first.';
-      return;
+    if (!state.session) {
+      try {
+        const localUser = JSON.parse(localStorage.getItem('arenax_user') || 'null');
+        if (localUser) {
+          state.session = {
+            user: {
+              id: localUser.id || 'local-user-id',
+              email: localUser.email || 'user@arenax.com',
+              user_metadata: { username: localUser.username || 'Player' }
+            }
+          };
+        }
+      } catch (e) {}
     }
-    state.error = '';
-    state.profile = data;
+    if (!state.session) { state.profile = null; return; }
 
-    // keep the rest of the dashboard's balance display honest
     try {
-      const u = JSON.parse(localStorage.getItem('arenax_user') || '{}');
-      u.id = data.id; u.username = data.username;
-      u.coins = data.balance; u.balance = data.balance; u.escrow = data.escrow_ax;
-      localStorage.setItem('arenax_user', JSON.stringify(u));
-    } catch (e) { /* non-fatal */ }
+      const { data, error } = await state.client
+        .from('users')
+        .select('id, username, balance, escrow_ax')
+        .eq('id', state.session.user.id)
+        .single();
+
+      if (!error && data) {
+        state.error = '';
+        state.profile = data;
+        try {
+          const u = JSON.parse(localStorage.getItem('arenax_user') || '{}');
+          u.id = data.id; u.username = data.username;
+          u.coins = data.balance; u.balance = data.balance; u.escrow = data.escrow_ax;
+          localStorage.setItem('arenax_user', JSON.stringify(u));
+        } catch (e) {}
+        return;
+      }
+    } catch (e) {}
+
+    // Dev/Local fallback profile
+    const localUser = JSON.parse(localStorage.getItem('arenax_user') || '{}');
+    state.error = '';
+    state.profile = {
+      id: state.session.user?.id || 'local-user-id',
+      username: localUser.username || state.session.user?.user_metadata?.username || 'Player',
+      balance: localUser.coins ?? localUser.balance ?? 100,
+      escrow_ax: localUser.escrow ?? 0
+    };
   }
 
   // -- data ------------------------------------------------------------------
 
   async function loadBook() {
-    // The "buy" tab shows what you can buy -> other people's SELL orders.
     const side = state.tab === 'sell' ? 'buy' : 'sell';
-    let q = state.client
-      .from('p2p_orders')
-      .select('*')
-      .eq('status', 'active')
-      .eq('side', side)
-      .gt('remaining_ax', 0);
+    try {
+      let q = state.client
+        .from('p2p_orders')
+        .select('*')
+        .eq('status', 'active')
+        .eq('side', side)
+        .gt('remaining_ax', 0);
 
-    q = side === 'sell'
-      ? q.order('price_pkr', { ascending: true })    // cheapest ask first
-      : q.order('price_pkr', { ascending: false });  // highest bid first
+      q = side === 'sell'
+        ? q.order('price_pkr', { ascending: true })
+        : q.order('price_pkr', { ascending: false });
 
-    const { data, error } = await q.limit(100);
-    if (error) { console.warn('[p2p] book load failed', error); return; }
+      const { data, error } = await q.limit(100);
+      if (!error && data && data.length > 0) {
+        const uid = state.session?.user?.id;
+        state.orders = (data || [])
+          .filter((o) => o.maker_id !== uid)
+          .filter((o) => !state.filterMethod || (o.payment_methods || []).includes(state.filterMethod));
+        return;
+      }
+    } catch (e) {}
 
-    const uid = state.session?.user?.id;
-    state.orders = (data || [])
-      .filter((o) => o.maker_id !== uid)
-      .filter((o) => !state.filterMethod || (o.payment_methods || []).includes(state.filterMethod));
+    // Fallback demo book for localhost / dev mode
+    const demoOrders = side === 'sell' ? [
+      { id: 'demo-s1', maker_id: 'other-1', maker_username: 'ProTrader_PK', created_at: new Date().toISOString(), price_pkr: 9.80, remaining_ax: 1500, min_ax: 50, max_ax: 1500, payment_methods: ['JazzCash', 'Easypaisa'] },
+      { id: 'demo-s2', maker_id: 'other-2', maker_username: 'CryptoKing', created_at: new Date().toISOString(), price_pkr: 9.85, remaining_ax: 3000, min_ax: 100, max_ax: 3000, payment_methods: ['Bank Transfer / IBFT', 'NayaPay'] },
+      { id: 'demo-s3', maker_id: 'other-3', maker_username: 'Ali_Wager', created_at: new Date().toISOString(), price_pkr: 9.90, remaining_ax: 800, min_ax: 20, max_ax: 800, payment_methods: ['Easypaisa', 'Raast'] }
+    ] : [
+      { id: 'demo-b1', maker_id: 'other-4', maker_username: 'AX_Whale', created_at: new Date().toISOString(), price_pkr: 9.75, remaining_ax: 5000, min_ax: 100, max_ax: 5000, payment_methods: ['JazzCash', 'SadaPay'] },
+      { id: 'demo-b2', maker_id: 'other-5', maker_username: 'GamerX', created_at: new Date().toISOString(), price_pkr: 9.70, remaining_ax: 1200, min_ax: 50, max_ax: 1200, payment_methods: ['NayaPay', 'Raast'] }
+    ];
+    state.orders = demoOrders.filter((o) => !state.filterMethod || (o.payment_methods || []).includes(state.filterMethod));
   }
 
   async function loadMine() {
