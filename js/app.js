@@ -30,22 +30,19 @@ class ArenaX {
             const sessionUser = JSON.parse(localStorage.getItem('arenax_user') || 'null');
             if (!sessionUser) return;
             const data = this.getData();
-            if (!data.user) {
-                data.user = {
-                    username: sessionUser.username || sessionUser.name || 'Player',
-                    email: sessionUser.email || '',
-                    phone: sessionUser.phone || ''
-                };
-            }
-            const sessionCoins = Number(sessionUser.coins ?? sessionUser.balance);
-            data.coins = 2000;
             if (!data.user) data.user = {};
-            data.user.username = 'AX559112';
-            data.user.uid = 'AX559112';
-            data.user.id = 'AX559112';
-            data.user.coins = 2000;
-            data.user.balance = 2000;
-            data.user.type = 'real';
+            data.user.username = sessionUser.username || sessionUser.name || data.user.username || 'Player';
+            data.user.email = sessionUser.email || data.user.email || '';
+            data.user.phone = sessionUser.phone || data.user.phone || '';
+            data.user.uid = sessionUser.uid || sessionUser.id || data.user.uid || '';
+            data.user.id = sessionUser.id || sessionUser.uid || data.user.id || '';
+            // Sync balance from session — do NOT override with a fixed value
+            const sessionCoins = Number(sessionUser.coins ?? sessionUser.balance ?? NaN);
+            if (!isNaN(sessionCoins)) {
+                data.coins = sessionCoins;
+                data.user.coins = sessionCoins;
+                data.user.balance = sessionCoins;
+            }
             this.saveData(data);
         } catch (e) { /* corrupted session data — ignore */ }
     }

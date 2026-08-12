@@ -2,41 +2,14 @@ const API_BASE_URL = '/api';
 
 class ArenaXAPI {
     constructor() {
-        let t = localStorage.getItem('arenax_token');
-        if (!t || t.startsWith('demo-token-')) {
-            t = 'real-token-AX559112-' + Date.now();
-            localStorage.setItem('arenax_token', t);
-        }
-        this.token = t;
-        let u = JSON.parse(localStorage.getItem('arenax_user') || 'null') || {};
-        u.username = 'AX559112';
-        u.uid = 'AX559112';
-        u.id = 'AX559112';
-        u.coins = 2000;
-        u.balance = 2000;
-        u.type = 'real';
-        u.isReal = true;
-        this.user = u;
-        localStorage.setItem('arenax_user', JSON.stringify(u));
+        this.token = localStorage.getItem('arenax_token') || null;
+        this.user = JSON.parse(localStorage.getItem('arenax_user') || 'null') || null;
     }
 
     setSession(token, user) {
-        let realToken = token;
-        if (!token || token.startsWith('demo-token-')) {
-            realToken = 'real-token-AX559112-' + Date.now();
-        }
-        if (user) {
-            user.username = 'AX559112';
-            user.uid = 'AX559112';
-            user.id = 'AX559112';
-            user.coins = 2000;
-            user.balance = 2000;
-            user.type = 'real';
-            user.isReal = true;
-        }
-        this.token = realToken;
+        this.token = token;
         this.user = user;
-        localStorage.setItem('arenax_token', realToken);
+        localStorage.setItem('arenax_token', token);
         localStorage.setItem('arenax_user', JSON.stringify(user));
         return user;
     }
@@ -53,20 +26,14 @@ class ArenaXAPI {
     }
 
     isLoggedIn() {
-        return !!(this.token || this.user);
+        return !!(this.token && this.user);
     }
 
     getUser() {
-        let u = this.user || JSON.parse(localStorage.getItem('arenax_user') || 'null') || {};
-        u.username = 'AX559112';
-        u.uid = 'AX559112';
-        u.id = 'AX559112';
-        u.coins = 2000;
-        u.balance = 2000;
-        u.type = 'real';
-        this.user = u;
-        localStorage.setItem('arenax_user', JSON.stringify(u));
-        return u;
+        if (!this.user) {
+            this.user = JSON.parse(localStorage.getItem('arenax_user') || 'null');
+        }
+        return this.user;
     }
 
     async request(method, endpoint, body = null) {
@@ -99,49 +66,16 @@ class ArenaXAPI {
         const result = await this.request('POST', '/auth/register', { username, email, phone, password });
         if (result.success && result.token) {
             this.setSession(result.token, result.user);
-            return result;
         }
-        // Fallback for real user mode
-        const mockUser = {
-            id: 'AX559112',
-            uid: 'AX559112',
-            username: 'AX559112',
-            email: email,
-            phone: phone,
-            coins: 2000,
-            balance: 2000,
-            type: 'real',
-            isReal: true,
-            gamesPlayed: 0,
-            wins: 0
-        };
-        const mockToken = 'real-token-AX559112-' + Date.now();
-        this.setSession(mockToken, mockUser);
-        return { success: true, message: 'Registration successful', token: mockToken, user: mockUser };
+        return result;
     }
 
     async login(emailOrUsername, password) {
         const result = await this.request('POST', '/auth/login', { email: emailOrUsername, password });
         if (result.success && result.token) {
             this.setSession(result.token, result.user);
-            return result;
         }
-        // Fallback for real user mode
-        const mockUser = {
-            id: 'AX559112',
-            uid: 'AX559112',
-            username: 'AX559112',
-            email: emailOrUsername,
-            coins: 2000,
-            balance: 2000,
-            type: 'real',
-            isReal: true,
-            gamesPlayed: 0,
-            wins: 0
-        };
-        const mockToken = 'real-token-AX559112-' + Date.now();
-        this.setSession(mockToken, mockUser);
-        return { success: true, message: 'Login successful', token: mockToken, user: mockUser };
+        return result;
     }
 
     async getMe() {
