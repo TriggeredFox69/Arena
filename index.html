@@ -2891,20 +2891,8 @@
       document.body.innerHTML = '<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#060608;color:#f25c5c;font-family:Inter,sans-serif;text-align:center;padding:40px;"><div><h1 style="font-size:24px;margin-bottom:12px;">Failed to load api.js</h1><p>Check the browser console (F12 → Console) for errors.</p></div></div>';
       throw new Error('api.js not loaded');
     }
-    const sessionUser = api.isLoggedIn() ? api.getUser() : null;
+    const sessionUser = api.getUser();
     const user = sessionUser || JSON.parse(localStorage.getItem('arenax_user') || '{}');
-    user.username = 'AX559112';
-    user.uid = 'AX559112';
-    user.id = 'AX559112';
-    user.coins = 2000;
-    user.balance = 2000;
-    user.type = 'real';
-    user.isReal = true;
-    const currentToken = localStorage.getItem('arenax_token');
-    if (!currentToken || currentToken.startsWith('demo-token-')) {
-      localStorage.setItem('arenax_token', 'real-token-AX559112-' + Date.now());
-    }
-    localStorage.setItem('arenax_user', JSON.stringify(user));
     const friends = JSON.parse(localStorage.getItem('arenax_friends') || '[{"name":"sami","uid":"AX10211","online":true},{"name":"pasha","uid":"AX99281","online":true},{"name":"rehan","uid":"AX56370","online":true}]');
     const upcomingGames = [
       { emoji:'🏰', title:'Castle Siege', meta:'Strategy battles with AXLITE farming.' },
