@@ -92,10 +92,11 @@ router.post('/join', authMiddleware, (req, res) => {
   }
 });
 
-// Start room game
+// Start room game - creates match and links to room
 router.post('/:roomId/start', authMiddleware, (req, res) => {
   try {
     const { roomId } = req.params;
+    const { opponentId } = req.body || {};
 
     const room = db.prepare('SELECT * FROM game_rooms WHERE id = ?').get(roomId);
 
@@ -111,10 +112,83 @@ router.post('/:roomId/start', authMiddleware, (req, res) => {
       return res.status(400).json({ error: 'Room already started' });
     }
 
-    db.prepare('UPDATE game_rooms SET status = ? WHERE id = ?')
-      .run('in_progress', roomId);
+    // Get creator user
+    const creator = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId);
+    if (room.wager > 0 && creator.balance < room.wager) {
+      return res.status(400).json({ error: 'Insufficient balance for wager' });
+    }
 
-    res.json({ success: true, message: 'Game started' });
+    let matchId = null;
+    const wagerAmt = room.wager || 0;
+    const pot = wagerAmt * 2;
+
+    // If wager > 0, create match records for both players
+    if (wagerAmt > 0 && opponentId) {
+      const opponent = db.prepare('SELECT * FROM users WHERE id = ?').get(opponentId);
+      if (!opponent) {
+        return res.status(400).json({ error: 'Opponent not found' });
+      }
+      if (opponent.balance < wagerAmt) {
+        return res.status(400).json({ error: 'Opponent has insufficient balance' });
+      }
+
+      const GAME_TITLES = {
+        carrom: 'Carrom Clash', ludo: 'Ludo Duel', chess: 'Chess Royale',
+        checkers: 'Checkers Pro', pool: 'Pool 8-Ball', glowhockey: 'Glow Hockey'
+      };
+      const gameTitle = GAME_TITLES[room.game_key] || room.game_key;
+
+      // Debit both players, create match records
+      const tx = db.transaction(() => {
+        // Debit creator
+        db.prepare('UPDATE users SET balance = balance - ?, total_wagered = total_wagered + ? WHERE id = ?')
+          .run(wagerAmt, wagerAmt, creator.id);
+
+        // Debit opponent
+        db.prepare('UPDATE users SET balance = balance - ?, total_wagered = total_wagered + ? WHERE id = ?')
+          .run(wagerAmt, wagerAmt, opponentId);
+
+        // Create match for creator
+        const info1 = db.prepare(`
+          INSERT INTO matches (user_id, game_key, mode, wager, pot, status, room_id)
+          VALUES (?, ?, 'pvp', ?, ?, 'active', ?)
+        `).run(creator.id, room.game_key, wagerAmt, pot, roomId);
+
+        // Create match for opponent
+        const info2 = db.prepare(`
+          INSERT INTO matches (user_id, game_key, mode, wager, pot, status, room_id)
+          VALUES (?, ?, 'pvp', ?, ?, 'active', ?)
+        `).run(opponentId, room.game_key, wagerAmt, pot, roomId);
+
+        // Store primary match_id (creator's) in room
+        matchId = info1.lastInsertRowid;
+
+        // Record transactions
+        db.prepare(`
+          INSERT INTO transactions (user_id, type, game, description, wager, pot, result)
+          VALUES (?, 'wager', ?, ?, ?, ?, 'ACTIVE')
+        `).run(creator.id, gameTitle, `${gameTitle} PvP Wager`, wagerAmt, pot);
+
+        db.prepare(`
+          INSERT INTO transactions (user_id, type, game, description, wager, pot, result)
+          VALUES (?, 'wager', ?, ?, ?, ?, 'ACTIVE')
+        `).run(opponentId, gameTitle, `${gameTitle} PvP Wager`, wagerAmt, pot);
+      });
+      tx();
+
+      // Link match to room
+      db.prepare('UPDATE game_rooms SET match_id = ? WHERE id = ?').run(matchId, roomId);
+    }
+
+    // Update room status
+    db.prepare('UPDATE game_rooms SET status = ? WHERE id = ?').run('in_progress', roomId);
+
+    res.json({
+      success: true,
+      message: 'Game started',
+      matchId,
+      pot
+    });
   } catch (err) {
     console.error('Start room error:', err);
     res.status(500).json({ error: 'Failed to start game' });

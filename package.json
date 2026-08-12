@@ -4,7 +4,7 @@
   "description": "ArenaX frontend and serverless backend for Netlify + Supabase",
   "scripts": {
     "dev": "netlify dev",
-    "build": "echo 'Static build: no build step required'"
+    "build": "node scripts/inject-env.js"
   },
   "dependencies": {
     "@netlify/functions": "^2.8.1",

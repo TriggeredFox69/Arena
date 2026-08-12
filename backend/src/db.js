@@ -146,4 +146,26 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_usdt_user ON usdt_transactions(user_id);
 `);
 
+// Migrations: add columns for room/match linking
+try {
+  // Add room_id to matches table (links match to game room)
+  db.exec(`ALTER TABLE matches ADD COLUMN room_id INTEGER REFERENCES game_rooms(id)`);
+} catch (e) {
+  // Column already exists
+}
+
+try {
+  // Add match_id to game_rooms table (links room to active match)
+  db.exec(`ALTER TABLE game_rooms ADD COLUMN match_id INTEGER REFERENCES matches(id)`);
+} catch (e) {
+  // Column already exists
+}
+
+try {
+  // Add current_turn_user_id to game_rooms (for turn timer tracking)
+  db.exec(`ALTER TABLE game_rooms ADD COLUMN current_turn_user_id INTEGER REFERENCES users(id)`);
+} catch (e) {
+  // Column already exists
+}
+
 module.exports = db;

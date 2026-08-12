@@ -12,3 +12,6 @@ backend/node_modules
 # Netlify access token (secret)
 netlify_token.txt
 .env.netlify
+
+# Generated config (contains public Supabase anon key, written at build time)
+js/supabase-config.js

@@ -14,6 +14,7 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change_me';
 process.env.JWT_EXPIRE = process.env.JWT_EXPIRE || '7d';
 
 const errorHandler = require('./middleware/errorHandler');
+const { initSocket } = require('./socket');
 
 const authRoutes = require('./routes/authRoutes');
 const walletRoutes = require('./routes/walletRoutes');
@@ -21,6 +22,10 @@ const gameRoutes = require('./routes/gameRoutes');
 
 const app = express();
 const server = http.createServer(app);
+
+// Initialize Socket.IO server for real-time chat, friends, marketplace, and PvP.
+initSocket(server);
+
 const PORT = process.env.PORT || 5000;
 
 app.use(helmet({
@@ -55,6 +60,13 @@ app.use(rateLimit({
 app.use('/api/auth', authRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/games', gameRoutes);
+app.use('/api/rooms', require('./routes/rooms-supabase'));
+app.use('/api/friends', require('./routes/friends-supabase'));
+app.use('/api/marketplace', require('./routes/marketplace-supabase'));
+app.use('/api/chat', require('./routes/chat-supabase'));
+app.use('/api/transfers', require('./routes/transfers-supabase'));
+app.use('/api/usdt', require('./routes/usdt-supabase'));
+app.use('/api/matchmaking', require('./routes/matchmaking'));
 
 app.get('/api/health', (req, res) => {
   res.json({ success: true, status: 'ok', service: 'arenax-backend' });
