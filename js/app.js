@@ -95,7 +95,11 @@ class ArenaX {
 
     isLoggedIn() {
         const data = this.getData();
-        return data.user !== null;
+        if (data.user !== null) return true;
+        // Also accept sessions set by api.js (dashboard login)
+        const sessionUser = localStorage.getItem('arenax_user');
+        const sessionToken = localStorage.getItem('arenax_token');
+        return !!(sessionUser || sessionToken);
     }
 
     register(username, email, phone, password) {
@@ -151,6 +155,13 @@ class ArenaX {
 
     getBalance() {
         const data = this.getData();
+        if (data.coins > 0) return data.coins;
+        // Fallback: read from api.js session user
+        try {
+            const u = JSON.parse(localStorage.getItem('arenax_user') || 'null');
+            const bal = Number(u?.coins ?? u?.balance ?? 0);
+            if (bal > 0) return bal;
+        } catch(e) {}
         return data.coins;
     }
 
@@ -172,6 +183,15 @@ class ArenaX {
 
     deductCoins(amount, reason = 'game') {
         const data = this.getData();
+
+        // If arenax_data is unpopulated, seed from session user first
+        if (data.coins === 0) {
+            try {
+                const u = JSON.parse(localStorage.getItem('arenax_user') || 'null');
+                const bal = Number(u?.coins ?? u?.balance ?? 0);
+                if (bal > 0) data.coins = bal;
+            } catch(e) {}
+        }
 
         if (data.coins < amount) {
             return { success: false, message: 'Insufficient balance' };
