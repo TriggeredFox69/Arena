@@ -100,39 +100,16 @@ class ArenaXAPI {
         const result = await this.request('POST', '/auth/register', { username, email, phone, password });
         if (result.success && result.token) {
             this.setSession(result.token, result.user);
-            return result;
         }
-        // Offline fallback — use the actual username/email provided
-        const uid = 'AX' + Math.floor(100000 + Math.random() * 900000);
-        const mockUser = {
-            id: uid, uid, username: username || email,
-            email, phone,
-            coins: 100, balance: 100,
-            gamesPlayed: 0, wins: 0
-        };
-        const mockToken = 'local-token-' + uid + '-' + Date.now();
-        this.setSession(mockToken, mockUser);
-        return { success: true, message: 'Registration successful', token: mockToken, user: mockUser };
+        return result;
     }
 
     async login(emailOrUsername, password) {
         const result = await this.request('POST', '/auth/login', { email: emailOrUsername, password });
         if (result.success && result.token) {
             this.setSession(result.token, result.user);
-            return result;
         }
-        // Offline fallback — use the actual credentials provided
-        const uid = 'AX' + Math.floor(100000 + Math.random() * 900000);
-        const mockUser = {
-            id: uid, uid,
-            username: emailOrUsername,
-            email: emailOrUsername,
-            coins: 100, balance: 100,
-            gamesPlayed: 0, wins: 0
-        };
-        const mockToken = 'local-token-' + uid + '-' + Date.now();
-        this.setSession(mockToken, mockUser);
-        return { success: true, message: 'Login successful', token: mockToken, user: mockUser };
+        return result;
     }
 
     async getMe() {
