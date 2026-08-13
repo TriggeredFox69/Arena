@@ -4052,6 +4052,7 @@
     let activeDmUid = null;   // UID of the open DM partner
     const dmKnownIds = new Set();
     const dmUnread = {};   // { uid: count }
+    const dmPendingQueue = []; // messages waiting for channel to be SUBSCRIBED
 
     function getDmMessages() {
       return JSON.parse(localStorage.getItem(getScopedKey('arenax_dm_messages')) || '{}');
@@ -4181,18 +4182,24 @@
       allDmMessages[key].push(msgObj);
       saveDmMessages(allDmMessages);
       renderDmMessages(activeDmUid);
+      renderDmSidebar(); // update last-message preview immediately
 
-      // Broadcast via Supabase DM channel
-      function trySendDmBroadcast(msg, retries) {
-        if (dmChannel && dmChannelReady) {
-          try {
-            dmChannel.send({ type: 'broadcast', event: 'dm_message', payload: msg });
-          } catch (e) {}
-        } else if (retries > 0) {
-          setTimeout(() => trySendDmBroadcast(msg, retries - 1), 400);
+      // Queue the broadcast — flushes immediately if ready, otherwise waits for SUBSCRIBED
+      dmPendingQueue.push(msgObj);
+      flushDmQueue();
+    }
+
+    /** Flush all pending outgoing DM messages now that channel is SUBSCRIBED */
+    function flushDmQueue() {
+      if (!dmChannel || !dmChannelReady || !dmPendingQueue.length) return;
+      while (dmPendingQueue.length) {
+        const msg = dmPendingQueue.shift();
+        try {
+          dmChannel.send({ type: 'broadcast', event: 'dm_message', payload: msg });
+        } catch (e) {
+          console.warn('[dm] flush send error', e);
         }
       }
-      trySendDmBroadcast(msgObj, 5);
     }
 
     function initDmChannel() {
@@ -4236,7 +4243,8 @@
         dmChannel.subscribe((status) => {
           if (status === 'SUBSCRIBED') {
             dmChannelReady = true;
-            console.log('[dm] channel ready');
+            console.log('[dm] channel ready — flushing', dmPendingQueue.length, 'queued messages');
+            flushDmQueue(); // send any messages that were queued before channel was ready
           }
         });
       } catch (e) {
