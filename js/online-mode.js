@@ -1252,64 +1252,55 @@
         this.roomCode = roomCode.toUpperCase();
         this.role     = role || 'guest';
 
-        // Get auth token
-        const token = localStorage.getItem('arenax_token')
-          || (await (async () => {
-            try {
-              if (typeof getSupabase === 'function') {
-                const { data: { session } } = await getSupabase().auth.getSession();
-                return session?.access_token || null;
-              }
-            } catch(e) {}
-            return null;
-          })());
+        // Step 1: Ensure socket is connected (same as matchmaking does)
+        try { await this.ensureConnected(); } catch(e) { /* socket optional */ }
 
-        // Use /sync (GET) — works for any room status (waiting, ready, in_progress).
-        // /join would fail because the room is already 'in_progress' when redirected.
-        const resp = await fetch('/api/rooms/sync?code=' + this.roomCode, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json', 'Authorization': token ? `Bearer ${token}` : '' }
-        });
-        const data = await resp.json().catch(() => null);
+        // Step 2: Fetch room via /sync (works for any status: waiting/ready/in_progress)
+        const data = await this.apiCall('/rooms/sync?code=' + this.roomCode, 'GET');
 
         if (!data?.success) {
           console.error('[OnlineMode.joinCustomRoom] sync failed:', data?.error);
-          // Fallback: try join in case room is still waiting (host joining their own room)
-          const joinResp = await fetch('/api/rooms/join', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': token ? `Bearer ${token}` : '' },
-            body: JSON.stringify({ roomCode: this.roomCode })
-          });
-          const joinData = await joinResp.json().catch(() => null);
-          if (!joinData?.success) {
-            console.error('[OnlineMode.joinCustomRoom] join also failed:', joinData?.error);
-            alert('Could not connect to room: ' + (joinData?.error || 'Unknown error'));
-            return;
-          }
-          const room = joinData.room;
-          this.wager  = room.wager || 0;
-          this.matchId = room.matchId || null;
-          if (socketClient && socketClient.joinGame) {
-            socketClient.joinGame(this.roomCode, this.gameKey, room.id);
-          }
+          alert('Could not connect to room: ' + (data?.error || 'Room not found'));
           return;
         }
 
         const room = data.room;
         this.wager  = room.wager || 0;
         this.matchId = room.matchId || null;
+        if (this.gameCommon) this.gameCommon.setOnlineWager(this.wager);
 
-        // Connect via socket (same as matchmaking flow)
-        if (socketClient && socketClient.joinGame) {
-          socketClient.joinGame(this.roomCode, this.gameKey, room.id);
+        // Step 3: Set currentRoom on socket client (mirrors matchmaking exactly)
+        if (socketClient) {
+          socketClient.currentRoom = {
+            roomCode: this.roomCode,
+            gameKey:  this.gameKey,
+            roomId:   room.id,
+            role:     this.role
+          };
+          if (socketClient.joinGame) {
+            socketClient.joinGame(this.roomCode, this.gameKey, room.id);
+          }
         }
 
-        console.log('[OnlineMode.joinCustomRoom] synced room', this.roomCode, 'as', this.role, 'status:', room.status);
+        console.log('[OnlineMode.joinCustomRoom] connected to room', this.roomCode, 'as', this.role, '| status:', room.status);
+
+        // Step 4: If room already has a 'start' event in the events log, fire handleGameStart now.
+        // Otherwise, _startReadyPolling() will poll /rooms/sync until it appears (same as matchmaking).
+        const startEvent = (data.events || []).find(e => e.type === 'start');
+        if (startEvent && startEvent.payload) {
+          console.log('[OnlineMode.joinCustomRoom] found start event immediately, starting game');
+          this.handleGameStart(startEvent.payload);
+        } else {
+          // Poll until the start event appears (handles edge case where game just started)
+          this._startReadyPolling();
+        }
+
       } catch(e) {
         console.error('[OnlineMode.joinCustomRoom] error:', e);
         alert('Failed to connect to room. Please try again.');
       }
     }
+
 
   }
 
