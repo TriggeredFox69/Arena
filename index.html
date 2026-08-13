@@ -4236,8 +4236,22 @@
             renderDmMessages(payload.fromUid);
           } else {
             dmUnread[payload.fromUid] = (dmUnread[payload.fromUid] || 0) + 1;
+
+            // Bell notification — only when this chat isn't currently open
+            const senderName = payload.fromName || payload.fromUid;
+            const preview = payload.text.length > 40 ? payload.text.slice(0, 40) + '…' : payload.text;
+            pushNotification({
+              id: 'dm-' + (payload.id || Date.now()),
+              title: '💬 ' + senderName + ' sent you a message',
+              text: preview,
+              type: 'message',
+              icon: '💬',
+              actionUrl: "switchSection('chat');switchChatTab('friends');openDm('" + payload.fromUid.replace(/'/g, '') + "')",
+              actionText: 'Open Chat'
+            });
           }
           renderDmSidebar();
+
         });
 
         dmChannel.subscribe((status) => {
