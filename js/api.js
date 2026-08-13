@@ -36,41 +36,74 @@ class ArenaXAPI {
         return this.user;
     }
 
-    /** Fetch live balance from Supabase users table and sync to localStorage/memory */
+    /**
+     * Sync balance from backend (uses supabaseAdmin, bypasses RLS).
+     * Call this on login and after any balance-affecting action.
+     */
     async syncBalanceFromSupabase() {
         try {
-            const sb = typeof getSupabase === 'function' ? getSupabase() : null;
-            if (!sb) return;
-            const { data: { session } } = await sb.auth.getSession();
-            if (!session) return;
-
-            const { data, error } = await sb
-                .from('users')
-                .select('id, username, uid, balance, escrow_ax, ax_balance')
-                .eq('id', session.user.id)
-                .single();
-
-            if (error || !data) return;
-
-            const balance = data.balance ?? data.ax_balance ?? 0;
-            const u = this.user || JSON.parse(localStorage.getItem('arenax_user') || '{}');
-            u.id = data.id;
-            u.uid = data.uid || data.id;
-            u.username = data.username || u.username;
-            u.coins = balance;
-            u.balance = balance;
-            u.escrow = data.escrow_ax || 0;
-            this.user = u;
-            localStorage.setItem('arenax_user', JSON.stringify(u));
-
-            // Update any visible balance displays
-            if (typeof window.render === 'function') window.render();
+            const result = await this.request('GET', '/wallet/balance');
+            if (result && result.success && result.balance) {
+                const balance = Number(result.balance.coins ?? 0);
+                const u = this.user || JSON.parse(localStorage.getItem('arenax_user') || '{}');
+                u.coins = balance;
+                u.balance = balance;
+                this.user = u;
+                localStorage.setItem('arenax_user', JSON.stringify(u));
+                if (typeof window.render === 'function') window.render();
+            }
         } catch (e) {
             console.warn('[api] syncBalanceFromSupabase failed:', e.message);
         }
     }
 
+    /**
+     * @deprecated Balance is now always written via backend routes (sendTransfer, game endpoints etc.).
+     * This is a stub that just syncs balance FROM server to keep local state accurate.
+     */
+    async updateBalanceInSupabase(newBalance) {
+        // Don't write to Supabase directly (RLS blocks anon writes).
+        // Just keep local state consistent — the actual DB value is managed by backend routes.
+        const u = this.user || JSON.parse(localStorage.getItem('arenax_user') || '{}');
+        u.coins = newBalance;
+        u.balance = newBalance;
+        this.user = u;
+        localStorage.setItem('arenax_user', JSON.stringify(u));
+        return true;
+    }
+
+
+    /**
+     * Send AX coins to another user via the backend API.
+     * The backend uses supabaseAdmin (service role) to update both balances,
+     * bypassing RLS. Accepts short UIDs (AXxxxxxx) or full UUIDs.
+     * Returns { success, newBalance, recipientUsername, message, error }
+     */
+    async sendTransfer(toUid, amount, message = '') {
+        const result = await this.request('POST', '/transfers/send', {
+            toUid,
+            amount: Number(amount),
+            message
+        });
+        // If successful, update local user balance to match server truth
+        if (result && result.success && typeof result.newBalance === 'number') {
+            const u = this.user || JSON.parse(localStorage.getItem('arenax_user') || '{}');
+            u.coins = result.newBalance;
+            u.balance = result.newBalance;
+            this.user = u;
+            localStorage.setItem('arenax_user', JSON.stringify(u));
+        }
+        return result;
+    }
+
+    /** @deprecated Use sendTransfer() instead — this bypasses RLS unreliably */
+    async transferBalanceInSupabase(targetUid, amount) {
+        return this.sendTransfer(targetUid, amount);
+    }
+
+
     async request(method, endpoint, body = null) {
+
         const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
         const options = {
             method,

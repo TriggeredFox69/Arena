@@ -7,6 +7,7 @@ const { protect } = require('../middleware/auth');
 router.use(protect);
 
 router.get('/balance', walletController.getBalance);
+router.get('/sync', walletController.getBalance);  // alias for /balance — returns server-side balance
 
 router.post(
   '/deposit',

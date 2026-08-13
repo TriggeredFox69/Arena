@@ -3,9 +3,12 @@
   "version": "1.0.0",
   "description": "ArenaX frontend and serverless backend for Netlify + Supabase",
   "scripts": {
-    "dev": "netlify dev",
+    "start": "node server.js",
+    "dev": "node server.js",
+    "netlify": "netlify dev",
     "build": "node scripts/inject-env.js"
   },
+
   "dependencies": {
     "@netlify/functions": "^2.8.1",
     "@supabase/supabase-js": "^2.45.0",

@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/live_marketplace.css" />
+  <link rel="stylesheet" href="css/notifications.css" />
   <style>
     :root {
       --bg: #060608;
@@ -1360,7 +1361,91 @@
     .dot { width: 10px; height: 10px; border-radius: 50%; background: #555; flex: 0 0 auto; }
     .dot.online { background: var(--success); box-shadow: 0 0 12px rgba(83,220,147,.8); animation: pulseDot 2s ease-in-out infinite; }
 
-    /* ---------- chat ---------- */
+    /* ---------- friends enhanced ---------- */
+    .friends-search-wrap { margin-bottom: 14px; position: relative; }
+    .friends-search-wrap input { width: 100%; padding-left: 36px; }
+    .friends-search-wrap .search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 14px; pointer-events: none; }
+    .friend-status-tag {
+      font-size: 10px; font-weight: 700; letter-spacing: .5px;
+      padding: 2px 8px; border-radius: 20px; text-transform: uppercase;
+    }
+    .friend-status-tag.accepted { background: rgba(83,220,147,.15); color: #53dc93; border: 1px solid rgba(83,220,147,.3); }
+    .friend-status-tag.pending  { background: rgba(216,164,59,.12); color: #d8a43b; border: 1px solid rgba(216,164,59,.25); }
+    .friend-empty-state { text-align: center; padding: 48px 20px; color: var(--muted); }
+    .friend-empty-state .fe-icon { font-size: 42px; margin-bottom: 12px; }
+
+    /* ---------- chat tabs ---------- */
+    .chat-tabs {
+      display: flex; gap: 6px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 14px; padding: 4px;
+      margin-bottom: 14px;
+    }
+    .chat-tab {
+      flex: 1; padding: 8px 0; border-radius: 10px; font-size: 13px; font-weight: 700;
+      background: none; border: none; color: var(--muted); cursor: pointer;
+      transition: .2s ease;
+    }
+    .chat-tab.active {
+      background: linear-gradient(135deg, rgba(216,164,59,.28), rgba(216,164,59,.12));
+      color: #ffe7a6; border: 1px solid rgba(216,164,59,.4);
+      box-shadow: 0 2px 12px rgba(216,164,59,.18);
+    }
+    .chat-tab:hover:not(.active) { color: var(--text); }
+
+    /* ---------- DM panel ---------- */
+    .dm-panel { display: flex; height: 420px; gap: 0; border: 1px solid rgba(255,255,255,.07); border-radius: var(--radius-lg); overflow: hidden; background: var(--panel-2); }
+    .dm-sidebar {
+      width: 210px; flex: 0 0 210px;
+      border-right: 1px solid rgba(255,255,255,.06);
+      overflow-y: auto; padding: 12px 0;
+    }
+    .dm-sidebar-title { font-size: 10px; font-weight: 800; letter-spacing: .8px; color: var(--muted); text-transform: uppercase; padding: 0 14px 8px; }
+    .dm-friend-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; cursor: pointer; transition: .15s;
+      border-left: 2px solid transparent; position: relative;
+    }
+    .dm-friend-item:hover { background: rgba(255,255,255,.04); }
+    .dm-friend-item.active { background: rgba(216,164,59,.1); border-left-color: #d8a43b; }
+    .dm-friend-avatar {
+      width: 36px; height: 36px; border-radius: 10px; flex: 0 0 36px;
+      display: grid; place-items: center; font-weight: 900; font-size: 14px;
+      color: #140d04; position: relative;
+    }
+    .dm-friend-avatar .dot { position: absolute; bottom: -2px; right: -2px; width: 8px; height: 8px; border: 2px solid #14141a; }
+    .dm-friend-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dm-friend-preview { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dm-unread-badge {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      background: #d8a43b; color: #0e0e14; border-radius: 999px;
+      font-size: 10px; font-weight: 900; padding: 1px 6px; min-width: 18px; text-align: center;
+    }
+    .dm-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .dm-header {
+      padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,.06);
+      display: flex; align-items: center; gap: 10px; flex: 0 0 auto;
+    }
+    .dm-header-name { font-size: 15px; font-weight: 800; }
+    .dm-header-uid { font-size: 11px; color: var(--muted); }
+    .dm-messages {
+      flex: 1; overflow-y: auto; padding: 14px; display: flex;
+      flex-direction: column; gap: 8px;
+    }
+    .dm-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); gap: 8px; }
+    .dm-empty .dm-empty-icon { font-size: 36px; }
+    .dm-input-row { display: flex; gap: 8px; padding: 10px 14px; border-top: 1px solid rgba(255,255,255,.06); flex: 0 0 auto; }
+    .dm-input-row input { flex: 1; }
+    .dm-no-friend {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; color: var(--muted); gap: 10px;
+    }
+    .dm-no-friend .dm-no-icon { font-size: 40px; }
+
+    /* ---------- chat (existing) ---------- */
+
+
     .chat-box {
       border: 1px solid rgba(255,255,255,.06);
       background: var(--panel-2);
@@ -1941,6 +2026,32 @@
           <div class="pill"><span class="clock-dot"></span><span id="clock">--:--</span></div>
           <div class="pill gold">🪙 <span id="coinBalance">100 AX</span></div>
           <div class="pill clickable" onclick="copyUid()" title="Click to copy UID">🆔 <span id="userUid">AX000000</span></div>
+
+          <!-- Notification Center Wrapper -->
+          <div class="notif-wrapper">
+            <button class="notif-bell-btn" id="notifBellBtn" onclick="toggleNotifDropdown(event)" title="Notification Center">
+              🔔 <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+            </button>
+
+            <div class="notif-dropdown" id="notifDropdown" style="display:none;">
+              <div class="notif-header">
+                <h3>🔔 Notifications</h3>
+                <div class="notif-header-actions">
+                  <button class="notif-action-btn" onclick="markAllNotificationsRead()">Mark all read</button>
+                  <button class="notif-action-btn" onclick="clearAllNotifications()">Clear</button>
+                </div>
+              </div>
+              <div class="notif-tabs">
+                <button class="notif-tab active" onclick="switchNotifTab('all', this)">All</button>
+                <button class="notif-tab" onclick="switchNotifTab('unread', this)">Unread</button>
+                <button class="notif-tab" onclick="switchNotifTab('trade', this)">⚡ Trades</button>
+                <button class="notif-tab" onclick="switchNotifTab('social', this)">👥 Social</button>
+                <button class="notif-tab" onclick="switchNotifTab('reward', this)">🏆 Rewards</button>
+              </div>
+              <div class="notif-list" id="notifList"></div>
+            </div>
+          </div>
+
           <button class="btn" onclick="openWallet('buy')">+ Buy AX</button>
         </div>
       </div>
@@ -2643,12 +2754,25 @@
         <div class="section-head">
           <div>
             <h2>Friends</h2>
-            <p>Add players by UID, invite them, and send AX directly.</p>
+            <p>Add players by UID, chat privately, and send AX directly.</p>
           </div>
           <div class="hero-actions" style="margin-top:0;">
+            <button class="btn secondary" onclick="toggleFriendRequests()" style="position:relative;">
+              👥 Requests <span id="friendReqBadge" style="display:none;background:#d8a43b;color:#0e0e14;border-radius:999px;font-size:10px;font-weight:900;padding:1px 6px;min-width:16px;text-align:center;margin-left:4px;"></span>
+            </button>
             <button class="btn" onclick="openFriendModal()">+ Add Friend</button>
-            <button class="btn secondary" onclick="openSendModal()">Send AX</button>
           </div>
+        </div>
+
+        <!-- Incoming friend requests panel -->
+        <div id="friendRequestsPanel" style="display:none;margin-bottom:14px;">
+          <div style="font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Incoming Requests</div>
+          <div id="friendRequestsList"></div>
+        </div>
+
+        <div class="friends-search-wrap">
+          <span class="search-icon">🔍</span>
+          <input class="input" id="friendSearch" placeholder="Search by name or UID…" oninput="renderFriends()" style="padding-left:36px;">
         </div>
         <div class="friends-list" id="friendsPanel"></div>
       </section>
@@ -2656,34 +2780,67 @@
       <section class="section-view" id="section-chat">
         <div class="section-head">
           <div>
-            <h2>Global Chat</h2>
-            <p>Real-time community chat. Broadcast messages live to all online players.</p>
+            <h2>Chat</h2>
+            <p>Global community chat and private friend DMs.</p>
           </div>
           <div class="pill live-online-pill" style="display:inline-flex;align-items:center;gap:8px;background:rgba(83,220,147,.12);border:1px solid rgba(83,220,147,.3);color:#53dc93;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;">
             <span class="pulse-dot" style="width:8px;height:8px;background:#53dc93;border-radius:50%;box-shadow:0 0 8px #53dc93;display:inline-block;"></span>
             <span id="chatCount">1</span>&nbsp;online
           </div>
         </div>
-        <div class="chat-box">
-          <div class="chat-messages" id="chatMessages"></div>
-          <div class="chat-quick-emojis" style="display:flex;gap:8px;padding:8px 14px;background:rgba(10,10,14,.6);border-top:1px solid rgba(255,255,255,.05);overflow-x:auto;">
-            <button class="emoji-chip" onclick="addEmoji('🔥')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:12px;cursor:pointer;font-size:14px;transition:all .2s;">🔥</button>
-            <button class="emoji-chip" onclick="addEmoji('🚀')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:12px;cursor:pointer;font-size:14px;transition:all .2s;">🚀</button>
-            <button class="emoji-chip" onclick="addEmoji('👑')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:12px;cursor:pointer;font-size:14px;transition:all .2s;">👑</button>
-            <button class="emoji-chip" onclick="addEmoji('🎮')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:12px;cursor:pointer;font-size:14px;transition:all .2s;">🎮</button>
-            <button class="emoji-chip" onclick="addEmoji('💰')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:12px;cursor:pointer;font-size:14px;transition:all .2s;">💰</button>
-            <button class="emoji-chip" onclick="addEmoji('👍')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:12px;cursor:pointer;font-size:14px;transition:all .2s;">👍</button>
-            <button class="emoji-chip" onclick="addEmoji('❤️')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:12px;cursor:pointer;font-size:14px;transition:all .2s;">❤️</button>
-            <button class="emoji-chip" onclick="addEmoji('😂')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:12px;cursor:pointer;font-size:14px;transition:all .2s;">😂</button>
-            <button class="emoji-chip" onclick="addEmoji('⚡')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:12px;cursor:pointer;font-size:14px;transition:all .2s;">⚡</button>
+
+        <!-- Tab switcher -->
+        <div class="chat-tabs">
+          <button id="tabGlobal"  class="chat-tab active" onclick="switchChatTab('global')">🌐 Global Chat</button>
+          <button id="tabFriends" class="chat-tab"         onclick="switchChatTab('friends')">💬 Friend DMs</button>
+        </div>
+
+        <!-- Global Chat pane -->
+        <div id="chatGlobalPane">
+          <div class="chat-box" style="position:relative;">
+            <div class="chat-messages" id="chatMessages"></div>
+
+            <!-- Floating New Messages Arrow Pill -->
+            <button class="chat-unread-pill" id="chatNewMessagesPill" onclick="scrollToLatestChatMessages()" style="display:none;position:absolute;bottom:72px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg, #d8a43b, #b58024);color:#0e0e14;border:1px solid rgba(255,255,255,0.4);padding:6px 16px;border-radius:999px;font-size:12px;font-weight:800;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,0.6), 0 0 18px rgba(216,164,59,0.4);z-index:20;align-items:center;gap:6px;transition:all 0.2s ease;">
+              <span style="font-size:14px;font-weight:900;">↓</span> <span id="chatNewMessagesCount">1 new message</span>
+            </button>
+
+            <div class="chat-quick-emojis" style="display:flex;gap:8px;padding:8px 14px;background:rgba(10,10,14,.6);border-top:1px solid rgba(255,255,255,.05);overflow-x:auto;">
+              <button class="emoji-chip" onclick="addEmoji('🔥')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:12px;cursor:pointer;font-size:14px;transition:all .2s;">🔥</button>
+              <button class="emoji-chip" onclick="addEmoji('🚀')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:12px;cursor:pointer;font-size:14px;transition:all .2s;">🚀</button>
+              <button class="emoji-chip" onclick="addEmoji('👑')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:12px;cursor:pointer;font-size:14px;transition:all .2s;">👑</button>
+              <button class="emoji-chip" onclick="addEmoji('🎮')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:12px;cursor:pointer;font-size:14px;transition:all .2s;">🎮</button>
+              <button class="emoji-chip" onclick="addEmoji('💰')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:12px;cursor:pointer;font-size:14px;transition:all .2s;">💰</button>
+              <button class="emoji-chip" onclick="addEmoji('👍')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:12px;cursor:pointer;font-size:14px;transition:all .2s;">👍</button>
+              <button class="emoji-chip" onclick="addEmoji('❤️')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:12px;cursor:pointer;font-size:14px;transition:all .2s;">❤️</button>
+              <button class="emoji-chip" onclick="addEmoji('😂')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:12px;cursor:pointer;font-size:14px;transition:all .2s;">😂</button>
+              <button class="emoji-chip" onclick="addEmoji('⚡')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:12px;cursor:pointer;font-size:14px;transition:all .2s;">⚡</button>
+            </div>
+            <div id="chatReplyBanner" style="display:none;background:rgba(216,164,59,.14);border-left:3px solid #d8a43b;padding:6px 12px;border-radius:8px;font-size:12px;margin:6px 14px;align-items:center;justify-content:space-between;color:#ffe7a6;">
+              <span id="chatReplyText"></span>
+              <button onclick="cancelReply()" style="background:none;border:none;color:#b7ab95;cursor:pointer;font-size:14px;">✕</button>
+            </div>
+            <div class="chat-input">
+              <input id="chatInput" placeholder="Say something in global chat… 😀" onkeydown="if(event.key==='Enter'){event.preventDefault();sendChat();}">
+              <button class="btn" onclick="sendChat()">➤</button>
+            </div>
           </div>
-          <div id="chatReplyBanner" style="display:none;background:rgba(216,164,59,.14);border-left:3px solid #d8a43b;padding:6px 12px;border-radius:8px;font-size:12px;margin:6px 14px;align-items:center;justify-content:space-between;color:#ffe7a6;">
-            <span id="chatReplyText"></span>
-            <button onclick="cancelReply()" style="background:none;border:none;color:#b7ab95;cursor:pointer;font-size:14px;">✕</button>
-          </div>
-          <div class="chat-input">
-            <input id="chatInput" placeholder="Say something in global chat... 😀">
-            <button class="btn" onclick="sendChat()">➤</button>
+        </div>
+
+        <!-- Friend DM pane -->
+        <div id="chatFriendsPane" style="display:none;">
+          <div class="dm-panel">
+            <div class="dm-sidebar" id="dmSidebar">
+              <div class="dm-sidebar-title">Friends</div>
+              <div id="dmFriendList"></div>
+            </div>
+            <div class="dm-main" id="dmMain">
+              <div class="dm-no-friend" id="dmNoFriend">
+                <div class="dm-no-icon">💬</div>
+                <div style="font-weight:700;">Select a friend to chat</div>
+                <div style="font-size:12px;">Your private DMs appear here</div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -2870,22 +3027,35 @@
 
   <div class="modal-backdrop" id="sendModal">
     <div class="modal">
-      <h3>Send AX</h3>
-      <input class="input" id="sendUid" placeholder="Receiver UID (e.g. AX101921)">
-      <input class="input" id="sendAmount" style="margin-top:10px" type="number" min="1" placeholder="Amount in AX">
-      <p>Transfers are instant in demo mode and cannot be reversed.</p>
-      <div class="modal-actions"><button class="btn secondary" onclick="closeModals()">Cancel</button><button class="btn" onclick="confirmSend()">Send</button></div>
+      <h3>Send AX Coins</h3>
+      <div id="sendFriendInfo" style="display:none;align-items:center;gap:10px;background:rgba(216,164,59,.08);border:1px solid rgba(216,164,59,.2);border-radius:12px;padding:10px 14px;margin-bottom:12px;">
+        <div id="sendFriendAvatar" style="width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-weight:900;font-size:15px;color:#140d04;flex:0 0 36px;"></div>
+        <div>
+          <div id="sendFriendName" style="font-weight:800;font-size:14px;"></div>
+          <div id="sendFriendUidDisplay" style="font-size:11px;color:var(--muted);"></div>
+        </div>
+      </div>
+      <input class="input" id="sendUid" placeholder="Receiver UID (e.g. AX101921)" style="margin-bottom:10px;">
+      <input class="input" id="sendAmount" type="number" min="1" placeholder="Amount in AX" style="margin-bottom:6px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:4px;">
+        <span>Your balance:</span><span id="sendBalanceDisplay" style="color:#ffe7a6;font-weight:700;"></span>
+      </div>
+      <p id="sendError" style="color:#f25c5c;font-size:12px;min-height:16px;margin:0 0 6px;"></p>
+      <p style="color:var(--muted);font-size:12px;margin:0 0 14px;">Transfers are instant and cannot be reversed.</p>
+      <div class="modal-actions"><button class="btn secondary" onclick="closeModals()">Cancel</button><button class="btn" onclick="confirmSend()">Send AX ➤</button></div>
     </div>
   </div>
 
   <div class="modal-backdrop" id="friendModal">
     <div class="modal">
       <h3>Add Friend</h3>
-      <input class="input" id="friendUid" placeholder="Player UID (e.g. AX443120)">
-      <p>A friend request will be sent to this player.</p>
+      <input class="input" id="friendUid" placeholder="Player UID (e.g. AX443120)" style="margin-bottom:8px;">
+      <p id="friendError" style="color:#f25c5c;font-size:12px;min-height:16px;margin:0 0 6px;"></p>
+      <p style="color:var(--muted);font-size:12px;margin:0 0 14px;">A friend request will be sent to this player. They can message and receive AX from you.</p>
       <div class="modal-actions"><button class="btn secondary" onclick="closeModals()">Cancel</button><button class="btn" onclick="confirmFriend()">Send Request</button></div>
     </div>
   </div>
+
 
   <div class="modal-backdrop" id="wagerGameModal">
     <div class="modal">
@@ -2927,7 +3097,7 @@
     }
     const sessionUser = api.getUser();
     const user = sessionUser || JSON.parse(localStorage.getItem('arenax_user') || '{}');
-    const friends = JSON.parse(localStorage.getItem('arenax_friends') || '[{"name":"sami","uid":"AX10211","online":true},{"name":"pasha","uid":"AX99281","online":true},{"name":"rehan","uid":"AX56370","online":true}]');
+    const friends = JSON.parse(localStorage.getItem('arenax_friends') || '[]');
     const upcomingGames = [
       { emoji:'🏰', title:'Castle Siege', meta:'Strategy battles with AXLITE farming.' },
       { emoji:'🏎️', title:'Turbo Racers', meta:'High-speed races with airdrop rewards.' },
@@ -3014,9 +3184,157 @@
       { key: 'diamond', name: 'Diamond', ico: '👑', min: 10000000, multiplier: 2.0, color: '#9b8cff' }
     ];
 
-    function saveUser(){ localStorage.setItem('arenax_user', JSON.stringify(user)); }
+    function saveUser() {
+      localStorage.setItem('arenax_user', JSON.stringify(user));
+      // Also persist balance to Supabase so page refreshes don't reset it
+      const newBalance = Number(user.coins ?? user.balance ?? 0);
+      if (typeof api !== 'undefined' && typeof api.updateBalanceInSupabase === 'function') {
+        api.updateBalanceInSupabase(newBalance).catch(() => {});
+      }
+    }
+
     function el(id){ return document.getElementById(id); }
     function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+    // ===== Notification System =====
+    let notificationsList = [];
+    let currentNotifFilter = 'all';
+
+    function initNotificationSystem() {
+      const stored = localStorage.getItem(getScopedKey('arenax_notifications'));
+      if (stored) {
+        try { notificationsList = JSON.parse(stored); } catch (e) { notificationsList = []; }
+      }
+
+      if (!notificationsList.length) {
+        notificationsList = [
+          {
+            id: 'notif-welcome',
+            title: 'Welcome to ArenaX!',
+            text: 'Explore games, trade AX in the marketplace, and farm AXLITE rewards.',
+            type: 'reward',
+            icon: '🏆',
+            time: 'Just now',
+            unread: true,
+            actionUrl: "switchSection('games')",
+            actionText: 'Explore Games'
+          }
+        ];
+        localStorage.setItem(getScopedKey('arenax_notifications'), JSON.stringify(notificationsList));
+      }
+
+      renderNotifications();
+    }
+
+    function renderNotifications() {
+      const badge = el('notifBadge');
+      const list = el('notifList');
+      if (!badge || !list) return;
+
+      const unreadCount = notificationsList.filter(n => n.unread).length;
+      if (unreadCount > 0) {
+        badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
+
+      let filtered = notificationsList;
+      if (currentNotifFilter === 'unread') filtered = notificationsList.filter(n => n.unread);
+      else if (currentNotifFilter !== 'all') filtered = notificationsList.filter(n => n.type === currentNotifFilter);
+
+      if (!filtered.length) {
+        list.innerHTML = `<div class="notif-empty">No ${currentNotifFilter === 'all' ? '' : currentNotifFilter} notifications</div>`;
+        return;
+      }
+
+      list.innerHTML = filtered.map(n => `
+        <div class="notif-item ${n.type} ${n.unread ? 'unread' : ''}" onclick="markNotifAsRead('${esc(n.id)}')">
+          <div class="notif-icon-box">${n.icon || '🔔'}</div>
+          <div class="notif-content">
+            <div class="notif-title">${esc(n.title)}</div>
+            <div class="notif-text">${esc(n.text)}</div>
+            <div class="notif-footer">
+              <span>${esc(n.time || 'Just now')}</span>
+              ${n.actionUrl ? `<button class="notif-btn-sm" onclick="event.stopPropagation(); markNotifAsRead('${esc(n.id)}'); ${n.actionUrl}">${esc(n.actionText || 'View')}</button>` : ''}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function toggleNotifDropdown(e) {
+      if (e) { try { e.preventDefault(); e.stopPropagation(); } catch(err){} }
+      const dd = el('notifDropdown');
+      if (!dd) return;
+      const isVisible = dd.style.display === 'flex' || dd.style.display === 'block';
+      dd.style.display = isVisible ? 'none' : 'flex';
+      if (!isVisible) renderNotifications();
+    }
+
+    function closeNotifDropdown() {
+      const dd = el('notifDropdown');
+      if (dd) dd.style.display = 'none';
+    }
+
+    function switchNotifTab(filter, btn) {
+      currentNotifFilter = filter;
+      document.querySelectorAll('.notif-tab').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      renderNotifications();
+    }
+
+    function markNotifAsRead(id) {
+      const notif = notificationsList.find(n => n.id === id);
+      if (notif && notif.unread) {
+        notif.unread = false;
+        localStorage.setItem(getScopedKey('arenax_notifications'), JSON.stringify(notificationsList));
+        renderNotifications();
+      }
+    }
+
+    function markAllNotificationsRead() {
+      notificationsList.forEach(n => n.unread = false);
+      localStorage.setItem(getScopedKey('arenax_notifications'), JSON.stringify(notificationsList));
+      renderNotifications();
+      toast('All notifications marked as read');
+    }
+
+    function clearAllNotifications() {
+      notificationsList = [];
+      localStorage.setItem(getScopedKey('arenax_notifications'), JSON.stringify(notificationsList));
+      renderNotifications();
+      toast('Notifications cleared');
+    }
+
+    function pushNotification({ id, title, text, type = 'general', icon = '🔔', actionUrl = '', actionText = '' }) {
+      // Avoid duplicate IDs
+      if (id && notificationsList.find(n => n.id === id)) return;
+      const newNotif = {
+        id: id || ('notif-' + Date.now() + '-' + Math.floor(Math.random()*1000)),
+        title,
+        text,
+        type,
+        icon,
+        time: 'Just now',
+        unread: true,
+        actionUrl,
+        actionText
+      };
+      notificationsList.unshift(newNotif);
+      if (notificationsList.length > 50) notificationsList.pop();
+      localStorage.setItem(getScopedKey('arenax_notifications'), JSON.stringify(notificationsList));
+      renderNotifications();
+      // NO toast — notifications live only in the bell drawer
+    }
+
+
+    document.addEventListener('click', (e) => {
+      const wrapper = document.querySelector('.notif-wrapper');
+      if (wrapper && !wrapper.contains(e.target)) {
+        closeNotifDropdown();
+      }
+    });
     function openSidebar(){
       console.log('[Sidebar] Opening mobile sidebar...');
       const sb = el('sidebar');
@@ -3089,46 +3407,861 @@
     function closeModals(){ document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('show')); }
     function openTradeModal(){ el('tradeModal')?.classList.add('show'); }
     function openWallet(mode){ walletMode = mode; if (el('walletTitle')) el('walletTitle').textContent = mode === 'buy' ? 'Buy AX' : 'Withdraw AX'; if (el('walletAddress')) el('walletAddress').style.display = mode === 'buy' ? 'none' : 'block'; el('walletModal')?.classList.add('show'); }
-    function openSendModal(uid=''){ if (el('sendUid')) el('sendUid').value = uid || ''; el('sendModal')?.classList.add('show'); }
+    function openSendModal(uid='', friendName='') {
+      const input = el('sendUid');
+      if (input) input.value = uid || '';
+      const infoBox = el('sendFriendInfo');
+      const avatarEl = el('sendFriendAvatar');
+      const nameEl = el('sendFriendName');
+      const uidDisp = el('sendFriendUidDisplay');
+      if (friendName && infoBox) {
+        infoBox.style.display = 'flex';
+        const color = friendAvatarColor(friendName);
+        if (avatarEl) { avatarEl.style.background = color; avatarEl.textContent = friendName.charAt(0).toUpperCase(); }
+        if (nameEl) nameEl.textContent = friendName;
+        if (uidDisp) uidDisp.textContent = uid;
+        if (input) input.style.display = 'none';
+      } else {
+        if (infoBox) infoBox.style.display = 'none';
+        if (input) input.style.display = '';
+      }
+      const balance = Number(user.coins ?? user.balance ?? user.ax ?? 0);
+      if (el('sendBalanceDisplay')) el('sendBalanceDisplay').textContent = balance.toLocaleString() + ' AX';
+      if (el('sendError')) el('sendError').textContent = '';
+      if (el('sendAmount')) el('sendAmount').value = '';
+      el('sendModal')?.classList.add('show');
+    }
     function openRoomModal(){ el('roomModal')?.classList.add('show'); }
     function confirmWallet(){ closeModals(); toast(walletMode === 'buy' ? 'AX purchase request submitted' : 'Withdraw request submitted'); }
-    function confirmSend(){ const amount = Number(el('sendAmount')?.value || 0); if (amount > 0) { user.coins = Math.max((user.coins||99) - amount, 0); saveUser(); render(); } closeModals(); toast('AX sent successfully'); }
-    function confirmFriend(){ closeModals(); toast('Friend request sent'); }
+    window.confirmSend = async function confirmSend() {
+
+      const uidInput = el('sendUid');
+      const friendInfoVisible = el('sendFriendInfo')?.style.display === 'flex';
+      const rawUid = friendInfoVisible
+        ? (el('sendFriendUidDisplay')?.textContent || '').trim()
+        : (uidInput?.value || '').trim();
+      const uid = rawUid.toUpperCase();
+      const amount = Number(el('sendAmount')?.value || 0);
+      const balance = Number(user.coins ?? user.balance ?? user.ax ?? 0);
+      const errEl = el('sendError');
+
+      // Client-side validation
+      if (!uid) { if (errEl) errEl.textContent = 'Enter a receiver UID.'; return; }
+      if (!amount || amount < 1) { if (errEl) errEl.textContent = 'Enter a valid amount (min 1 AX).'; return; }
+      if (amount > balance) { if (errEl) errEl.textContent = `Insufficient balance (${balance.toLocaleString()} AX).`; return; }
+      if (errEl) errEl.textContent = '';
+
+      const allFriends = JSON.parse(localStorage.getItem(getScopedKey('arenax_friends')) || '[]');
+      const recipient = allFriends.find(f => f.uid.toUpperCase() === uid);
+      const recipName = recipient ? recipient.name : uid;
+      const myUid = shortUid().toUpperCase();
+      const myName = user.username || 'Guest';
+      const transferId = 'axtr-' + Date.now() + '-' + Math.floor(Math.random() * 99999);
+
+      // Show loading state on send button (class is "btn", not "btn-primary")
+      const sendBtn = document.querySelector('#sendModal button:not(.secondary)');
+      const origBtnText = sendBtn ? sendBtn.textContent : '';
+      if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Sending…'; }
+
+      // Gather all auth credentials — function accepts whichever is available
+      const jwtToken = localStorage.getItem('arenax_token') || (typeof api !== 'undefined' ? api.token : null);
+      const fromUserId = user.id || null;
+
+      // Also try to get Supabase access token for fallback auth
+      let supabaseToken = null;
+      try {
+        const sb = typeof getSupabase === 'function' ? getSupabase() : null;
+        if (sb) {
+          const { data: { session } } = await sb.auth.getSession();
+          if (session) supabaseToken = session.access_token;
+        }
+      } catch(e) {}
+
+      console.log('[transfer] Sending:', { toUid: uid, amount, hasJwt: !!jwtToken, hasSbToken: !!supabaseToken, fromUserId });
+
+      let result = null;
+      try {
+        // Primary: call Express backend /api/transfers/send
+        // Auth: Bearer JWT (arenax_token) or Supabase access token
+        const authToken = jwtToken || supabaseToken || '';
+        const resp = await fetch('/api/transfers/send', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': authToken ? `Bearer ${authToken}` : ''
+          },
+          body: JSON.stringify({ toUid: uid, amount })
+        });
+        result = await resp.json().catch(() => null);
+        console.log('[transfer] Response:', resp.status, result);
+      } catch(e) {
+        console.warn('[confirmSend] fetch error:', e);
+        result = { success: false, error: 'Network error — is the server running? (npm run dev)' };
+      }
+
+      if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = origBtnText; }
+
+      if (!result || !result.success) {
+        const errMsg = (result && (result.error || result.message)) || 'Transfer failed. Check console for details.';
+        if (errEl) errEl.textContent = errMsg;
+        toast('❌ ' + errMsg);
+        return;
+      }
+
+      // Backend confirmed — update local balance from server's value
+      const confirmedBalance = typeof result.newBalance === 'number' ? result.newBalance : (balance - amount);
+      user.coins = confirmedBalance;
+      user.balance = confirmedBalance;
+      saveUser();
+      render();
+
+      // Close modal, show success animation
+      closeModals();
+      showTransferSuccess(amount, result.recipientUsername || recipName);
+
+      // Sender bell notification
+      pushNotification({
+        id: 'ax-sent-' + transferId,
+        title: '💸 AX Coins Sent',
+        text: `You sent ${amount.toLocaleString()} AX to ${result.recipientUsername || recipName} (${uid}). New balance: ${confirmedBalance.toLocaleString()} AX.`,
+        type: 'trade', icon: '💸',
+        actionUrl: "switchSection('dashboard')", actionText: 'View Balance'
+      });
+
+      // Real-time broadcast — notify recipient instantly
+      try {
+        const sbRT = typeof getSupabase === 'function' ? getSupabase() : null;
+        if (sbRT) {
+          const targetCh = sbRT.channel('arenax-fr-' + uid.toLowerCase());
+          targetCh.subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              targetCh.send({
+                type: 'broadcast',
+                event: 'ax_transfer',
+                payload: { id: transferId, fromUid: myUid, fromName: myName, toUid: uid, amount }
+              }).catch(() => {});
+              setTimeout(() => { try { sbRT.removeChannel(targetCh); } catch(e){} }, 3000);
+            }
+          });
+        }
+      } catch(e) {}
+
+      pushActivity('💸', `Sent ${amount} AX to @${result.recipientUsername || recipName}`);
+      renderFriends();
+    }
+
+    // ===== Transfer Success Animation =====
+
+    function showTransferSuccess(amount, recipientName) {
+      // Remove any existing overlay
+      const existing = document.getElementById('transferSuccessOverlay');
+      if (existing) existing.remove();
+
+      const overlay = document.createElement('div');
+      overlay.id = 'transferSuccessOverlay';
+      overlay.style.cssText = `
+        position:fixed;top:0;left:0;width:100%;height:100%;
+        background:rgba(0,0,0,0.65);backdrop-filter:blur(6px);
+        display:flex;align-items:center;justify-content:center;
+        z-index:99999;animation:fadeIn 0.25s ease;
+      `;
+      overlay.innerHTML = `
+        <div style="
+          background:linear-gradient(135deg,#0d1117 0%,#161b22 100%);
+          border:1.5px solid rgba(0,255,140,0.35);
+          border-radius:24px;padding:48px 56px;text-align:center;
+          box-shadow:0 0 60px rgba(0,255,140,0.15),0 20px 60px rgba(0,0,0,0.6);
+          animation:popIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+          min-width:280px;
+        ">
+          <div style="
+            width:80px;height:80px;background:linear-gradient(135deg,#00ff8c,#00c96e);
+            border-radius:50%;display:flex;align-items:center;justify-content:center;
+            margin:0 auto 20px;
+            box-shadow:0 0 40px rgba(0,255,140,0.5);
+            animation:pulse 1s ease infinite;
+          ">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+              <path d="M5 13l4 4L19 7" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div style="color:#00ff8c;font-size:28px;font-weight:800;letter-spacing:1px;margin-bottom:8px;">
+            ${Number(amount).toLocaleString()} AX Sent!
+          </div>
+          <div style="color:#8b949e;font-size:14px;margin-bottom:6px;">
+            Successfully sent to
+          </div>
+          <div style="color:#e6edf3;font-size:16px;font-weight:600;margin-bottom:24px;">
+            ${recipientName}
+          </div>
+          <div style="color:#3fb950;font-size:13px;opacity:0.8;">✓ Balance updated in Supabase</div>
+        </div>
+      `;
+
+      // Add keyframe animations if not present
+      if (!document.getElementById('transferSuccessStyles')) {
+        const style = document.createElement('style');
+        style.id = 'transferSuccessStyles';
+        style.textContent = `
+          @keyframes popIn {
+            from { transform: scale(0.7); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+          }
+          @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 40px rgba(0,255,140,0.5); }
+            50% { box-shadow: 0 0 60px rgba(0,255,140,0.8); }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+
+      document.body.appendChild(overlay);
+
+      // Auto-dismiss after 2.5 seconds
+      overlay.addEventListener('click', () => overlay.remove());
+      setTimeout(() => {
+        if (overlay.parentNode) {
+          overlay.style.animation = 'fadeOut 0.3s ease forwards';
+          setTimeout(() => overlay.remove(), 300);
+        }
+      }, 2500);
+    }
+
+
+    // Check Supabase for any AX transfers addressed to me that I haven't claimed yet
+    async function claimPendingTransfers() {
+      const sb = typeof getSupabase === 'function' ? getSupabase() : null;
+      if (!sb) return;
+      const myUid = shortUid().toUpperCase();
+      if (!myUid) return;
+
+      const claimedKey = getScopedKey('arenax_claimed_transfers');
+      const claimed = new Set(JSON.parse(localStorage.getItem(claimedKey) || '[]'));
+
+      try {
+        const { data, error } = await sb
+          .from('chat_messages')
+          .select('id, message, created_at')
+          .eq('game_id', 'ax_transfer')
+          .order('created_at', { ascending: false })
+          .limit(200);
+
+        if (error || !data) return;
+
+        let totalReceived = 0;
+        const newClaimed = [];
+        const senders = [];
+
+        data.forEach(row => {
+          try {
+            const tr = JSON.parse(row.message);
+            if (!tr || !tr.id || !tr.toUid || !tr.amount) return;
+            if (tr.toUid.toUpperCase() !== myUid) return; // not for me
+            if (claimed.has(tr.id)) return; // already processed
+            totalReceived += Number(tr.amount);
+            newClaimed.push(tr.id);
+            senders.push({ name: tr.fromName, uid: tr.fromUid, amount: Number(tr.amount) });
+          } catch(e) {}
+        });
+
+        if (totalReceived > 0) {
+          const currentCoins = Number(user.coins ?? user.balance ?? user.ax ?? 0);
+          user.coins = currentCoins + totalReceived;
+          saveUser();
+          render();
+
+          newClaimed.forEach(id => claimed.add(id));
+          localStorage.setItem(claimedKey, JSON.stringify([...claimed]));
+
+          senders.forEach(s => {
+            pushNotification({
+              id: 'ax-recv-' + s.uid + '-' + Date.now() + '-' + Math.random(),
+              title: '💰 AX Coins Received',
+              text: `You received ${s.amount.toLocaleString()} AX from ${s.name} (${s.uid}).`,
+              type: 'reward',
+              icon: '💰',
+              actionUrl: "switchSection('dashboard')",
+              actionText: 'View Balance'
+            });
+          });
+
+          const total = totalReceived.toLocaleString();
+          if (senders.length === 1) {
+            toast(`💰 Received ${total} AX from ${senders[0].name}!`);
+          } else if (senders.length > 1) {
+            toast(`💰 Received ${total} AX from ${senders.length} friends!`);
+          }
+          pushActivity('💰', `Received ${total} AX coins`);
+        }
+      } catch(e) {
+        console.warn('[claimPendingTransfers]', e);
+      }
+    }
+
+    function confirmFriend() {
+      const rawUid = (el('friendUid')?.value || '').trim();
+      const errEl = el('friendError');
+      if (errEl) errEl.textContent = '';
+      if (!rawUid) { if (errEl) errEl.textContent = 'Enter a UID.'; return; }
+      if (!/^AX[a-zA-Z0-9]+$/i.test(rawUid)) { if (errEl) errEl.textContent = 'UID must start with AX (e.g. AX840364).'; return; }
+      const uid = rawUid.toUpperCase();
+      if (uid === shortUid().toUpperCase()) { if (errEl) errEl.textContent = "You can't add yourself."; return; }
+      const friendsKey = getScopedKey('arenax_friends');
+      const allFriends = JSON.parse(localStorage.getItem(friendsKey) || '[]');
+      if (allFriends.find(f => f.uid.toUpperCase() === uid)) { if (errEl) errEl.textContent = 'Already in your friends list.'; return; }
+
+      const myUid = shortUid();
+      const myName = user.username || 'Guest';
+      const targetName = 'Player_' + uid.slice(-4);
+
+      // Add to my list as pending
+      allFriends.push({ name: targetName, uid, online: false, pending: true });
+      localStorage.setItem(friendsKey, JSON.stringify(allFriends));
+      renderFriends();
+      closeModals();
+
+      // Broadcast friend request to the target user's personal channel
+      const sb = typeof getSupabase === 'function' ? getSupabase() : null;
+      if (sb) {
+        try {
+          const targetChannel = sb.channel('arenax-fr-' + uid.toLowerCase());
+          targetChannel.subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              targetChannel.send({
+                type: 'broadcast',
+                event: 'friend_request',
+                payload: { fromUid: myUid, fromName: myName, toUid: uid }
+              }).then(() => {
+                // Unsubscribe after sending — we only needed it to deliver the message
+                setTimeout(() => { try { sb.removeChannel(targetChannel); } catch(e){} }, 2000);
+              }).catch(() => {});
+            }
+          });
+        } catch(e) {}
+      }
+
+      toast('📨 Friend request sent to ' + uid);
+    }
+
+    function acceptFriendRequest(fromUid, fromName) {
+      // Add them to my friends list (accepted)
+      const friendsKey = getScopedKey('arenax_friends');
+      const allFriends = JSON.parse(localStorage.getItem(friendsKey) || '[]');
+      if (!allFriends.find(f => f.uid === fromUid)) {
+        allFriends.push({ name: fromName, uid: fromUid, online: true, pending: false });
+        localStorage.setItem(friendsKey, JSON.stringify(allFriends));
+        renderFriends();
+      }
+
+      // Broadcast acceptance back so they know it was accepted
+      const sb = typeof getSupabase === 'function' ? getSupabase() : null;
+      if (sb) {
+        try {
+          const replyChannel = sb.channel('arenax-fr-' + fromUid.toLowerCase());
+          replyChannel.subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              replyChannel.send({
+                type: 'broadcast',
+                event: 'friend_accepted',
+                payload: { fromUid: shortUid(), fromName: user.username || 'Guest', toUid: fromUid }
+              }).then(() => {
+                setTimeout(() => { try { sb.removeChannel(replyChannel); } catch(e){} }, 2000);
+              }).catch(() => {});
+            }
+          });
+        } catch(e) {}
+      }
+
+      // Also remove from stored requests and update badge
+      removeStoredRequest(fromUid);
+      // Dismiss the notification
+      document.getElementById('fr-notif-' + fromUid)?.remove();
+      toast('✅ ' + fromName + ' added as friend!');
+      pushActivity('👥', 'Accepted friend request from @' + fromName);
+    }
+
+    // ===== Friend Request Persistence =====
+    function storeIncomingRequest(fromUid, fromName) {
+      const reqsKey = getScopedKey('arenax_incoming_requests');
+      const reqs = JSON.parse(localStorage.getItem(reqsKey) || '[]');
+      if (!reqs.find(r => r.uid === fromUid)) {
+        reqs.push({ uid: fromUid, name: fromName, at: Date.now() });
+        localStorage.setItem(reqsKey, JSON.stringify(reqs));
+      }
+      updateFriendReqBadge();
+    }
+
+    function removeStoredRequest(fromUid) {
+      const reqsKey = getScopedKey('arenax_incoming_requests');
+      let reqs = JSON.parse(localStorage.getItem(reqsKey) || '[]');
+      reqs = reqs.filter(r => r.uid !== fromUid);
+      localStorage.setItem(reqsKey, JSON.stringify(reqs));
+      updateFriendReqBadge();
+      renderFriendRequests();
+    }
+
+    function updateFriendReqBadge() {
+      const reqsKey = getScopedKey('arenax_incoming_requests');
+      const reqs = JSON.parse(localStorage.getItem(reqsKey) || '[]');
+      const badge = el('friendReqBadge');
+      if (!badge) return;
+      if (reqs.length > 0) {
+        badge.style.display = 'inline-block';
+        badge.textContent = reqs.length;
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    function toggleFriendRequests() {
+      const panel = el('friendRequestsPanel');
+      if (!panel) return;
+      const isOpen = panel.style.display !== 'none';
+      panel.style.display = isOpen ? 'none' : 'block';
+      if (!isOpen) renderFriendRequests();
+    }
+
+    function renderFriendRequests() {
+      const listEl = el('friendRequestsList');
+      if (!listEl) return;
+      const reqsKey = getScopedKey('arenax_incoming_requests');
+      const reqs = JSON.parse(localStorage.getItem(reqsKey) || '[]');
+      if (!reqs.length) {
+        listEl.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);font-size:13px;">No pending friend requests</div>';
+        return;
+      }
+      listEl.innerHTML = reqs.map(r => {
+        const color = friendAvatarColor(r.name);
+        return `
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:14px;margin-bottom:8px;">
+            <div style="width:40px;height:40px;border-radius:12px;background:${color};display:grid;place-items:center;font-weight:900;font-size:16px;color:#140d04;flex:0 0 40px;">${r.name.charAt(0).toUpperCase()}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:800;font-size:14px;">${esc(r.name)}</div>
+              <div style="font-size:11px;color:var(--muted);">${esc(r.uid)}</div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <button onclick="acceptFriendRequest('${esc(r.uid)}','${esc(r.name)}')" style="background:linear-gradient(135deg,#d8a43b,#b58024);color:#0e0e14;border:none;border-radius:10px;padding:7px 14px;font-weight:800;font-size:12px;cursor:pointer;">✓ Accept</button>
+              <button onclick="declineFriendRequest('${esc(r.uid)}')" style="background:rgba(255,255,255,.06);color:var(--muted);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:7px 10px;font-weight:700;font-size:12px;cursor:pointer;">✕</button>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+
+    function declineFriendRequest(fromUid) {
+      document.getElementById('fr-notif-' + fromUid)?.remove();
+      removeStoredRequest(fromUid);
+      toast('Friend request declined');
+    }
+
+    function showFriendRequestNotif(fromUid, fromName) {
+      // Persist the request so it survives page refresh
+      storeIncomingRequest(fromUid, fromName);
+      // Notification goes to bell drawer only — no floating popup
+      pushNotification({
+        id: 'fr-req-' + fromUid,
+        title: '👥 Friend Request',
+        text: fromName + ' (' + fromUid + ') sent you a friend request. Open Friends to accept.',
+        type: 'social',
+        icon: '👥',
+        actionUrl: "switchSection('friends')",
+        actionText: 'View Friends'
+      });
+      toast('👥 Friend request from ' + fromName + ' — check the bell 🔔');
+    }
+
+    function initFriendRequestChannel() {
+      const sb = typeof getSupabase === 'function' ? getSupabase() : null;
+      if (!sb) return;
+      const myUid = shortUid();
+      if (!myUid) return;
+      try {
+        const frChannel = sb.channel('arenax-fr-' + myUid.toLowerCase(), {
+          config: { broadcast: { self: false } }
+        });
+
+        frChannel.on('broadcast', { event: 'friend_request' }, ({ payload }) => {
+          if (!payload || !payload.fromUid || !payload.fromName) return;
+          showFriendRequestNotif(payload.fromUid, payload.fromName);
+        });
+
+        frChannel.on('broadcast', { event: 'friend_accepted' }, ({ payload }) => {
+          if (!payload || !payload.fromUid || !payload.fromName) return;
+          const friendsKey = getScopedKey('arenax_friends');
+          const allFriends = JSON.parse(localStorage.getItem(friendsKey) || '[]');
+          const entry = allFriends.find(f => f.uid.toUpperCase() === payload.fromUid.toUpperCase());
+          if (entry) {
+            entry.pending = false;
+            entry.name = payload.fromName;
+            entry.online = true;
+            localStorage.setItem(friendsKey, JSON.stringify(allFriends));
+            renderFriends();
+          }
+          pushNotification({
+            id: 'fr-accepted-' + payload.fromUid,
+            title: '🎉 Friend Request Accepted',
+            text: payload.fromName + ' accepted your friend request! You can now chat and send AX.',
+            type: 'social',
+            icon: '🎉',
+            actionUrl: "switchSection('friends')",
+            actionText: 'View Friends'
+          });
+          toast('🎉 ' + payload.fromName + ' accepted your friend request!');
+          pushActivity('✅', payload.fromName + ' accepted your friend request');
+        });
+
+        frChannel.on('broadcast', { event: 'ax_transfer' }, ({ payload }) => {
+          if (!payload || !payload.amount || !payload.fromName || !payload.fromUid) return;
+          const myUid = shortUid().toUpperCase();
+          if ((payload.toUid || '').toUpperCase() !== myUid) return;
+          const claimedKey = getScopedKey('arenax_claimed_transfers');
+          const claimed = new Set(JSON.parse(localStorage.getItem(claimedKey) || '[]'));
+          const tid = payload.id || (payload.fromUid + '-' + payload.amount + '-' + Date.now());
+          if (claimed.has(tid)) return;
+          claimed.add(tid);
+          localStorage.setItem(claimedKey, JSON.stringify([...claimed]));
+          const currentCoins = Number(user.coins ?? user.balance ?? user.ax ?? 0);
+          user.coins = currentCoins + Number(payload.amount);
+          saveUser();
+          render();
+          pushNotification({
+            id: 'ax-recv-' + payload.fromUid + '-' + Date.now(),
+            title: '💰 AX Coins Received',
+            text: `You received ${Number(payload.amount).toLocaleString()} AX from ${payload.fromName} (${payload.fromUid}).`,
+            type: 'reward',
+            icon: '💰',
+            actionUrl: "switchSection('dashboard')",
+            actionText: 'View Balance'
+          });
+          toast(`💰 Received ${payload.amount} AX from ${payload.fromName}!`);
+          pushActivity('💰', `Received ${payload.amount} AX from @${payload.fromName}`);
+        });
+
+        frChannel.subscribe();
+        setTimeout(() => claimPendingTransfers(), 1500);
+        // Initialize DM channel eagerly so first message is never lost
+        setTimeout(() => initDmChannel(), 500);
+      } catch(e) {
+        console.warn('[fr] channel error', e);
+      }
+
+      updateFriendReqBadge();
+    }
+
+
     function createRoom(){ pushActivity('🏠', 'Custom room created'); closeModals(); toast('Custom room created'); }
+
     function pushActivity(icon, text){
-      const items = JSON.parse(localStorage.getItem('arenax_activity') || '[]');
+      const actKey = getScopedKey('arenax_activity');
+      const items = JSON.parse(localStorage.getItem(actKey) || '[]');
       items.unshift({ icon, text, at: Date.now() });
-      localStorage.setItem('arenax_activity', JSON.stringify(items.slice(0, 8)));
+      localStorage.setItem(actKey, JSON.stringify(items.slice(0, 8)));
       renderActivity();
     }
     function renderActivity(){
       const feed = el('activityFeed');
       if (!feed) return;
-      const items = JSON.parse(localStorage.getItem('arenax_activity') || '[]');
+      const actKey = getScopedKey('arenax_activity');
+      const items = JSON.parse(localStorage.getItem(actKey) || '[]');
       if (!items.length) {
         const seed = [
           { icon:'🎮', text:`${user.gamesPlayed || 0} games played so far` },
           { icon:'🏆', text:`${user.wins || 0} wins recorded in your profile` },
           { icon:'🪙', text:`Current wallet balance: ${Number(user.coins ?? user.balance ?? user.ax ?? 99)} AX` }
         ];
-        localStorage.setItem('arenax_activity', JSON.stringify(seed.map(x => ({...x, at: Date.now()}))));
+        localStorage.setItem(actKey, JSON.stringify(seed.map(x => ({...x, at: Date.now()}))));
       }
-      const finalItems = JSON.parse(localStorage.getItem('arenax_activity') || '[]');
+      const finalItems = JSON.parse(localStorage.getItem(actKey) || '[]');
       feed.innerHTML = finalItems.slice(0, 6).map(item => `<div class="activity-item"><span>${item.icon}</span><span>${esc(item.text)}</span></div>`).join('');
     }
+
+    // ===== Friends System =====
+    const AVATAR_COLORS = ['#d8a43b','#53dc93','#7b8cff','#ff6b9d','#ff9f43','#00d2d3','#a29bfe','#fd79a8'];
+    function friendAvatarColor(name) {
+      let h = 0;
+      for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
+      return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
+    }
+
+    function renderFriends() {
+      const panel = el('friendsPanel');
+      if (!panel) return;
+      const friendsKey = getScopedKey('arenax_friends');
+      let allFriends = JSON.parse(localStorage.getItem(friendsKey) || '[]');
+      const query = (el('friendSearch')?.value || '').trim().toLowerCase();
+      if (query) allFriends = allFriends.filter(f =>
+        f.name.toLowerCase().includes(query) || f.uid.toLowerCase().includes(query)
+      );
+
+      if (!allFriends.length) {
+        panel.innerHTML = `<div class="friend-empty-state"><div class="fe-icon">${query ? '🔍' : '👥'}</div><div style="font-weight:700;margin-bottom:6px;">${query ? 'No friends found' : 'No friends yet'}</div><div style="font-size:13px;">${query ? 'Try a different name or UID' : 'Press &ldquo;+ Add Friend&rdquo; to invite players'}</div></div>`;
+        return;
+      }
+
+      panel.innerHTML = allFriends.map((f, i) => {
+        const color = friendAvatarColor(f.name);
+        const initial = f.name.charAt(0).toUpperCase();
+        const status = f.pending ? 'pending' : 'accepted';
+        const statusLabel = f.pending ? 'Pending' : 'Friend';
+        const safeUid = f.uid.replace(/'/g, '');
+        const safeName = f.name.replace(/'/g, '');
+        return `
+          <div class="friend-row card" style="display:flex;align-items:center;gap:12px;animation-delay:${i*50}ms">
+            <div class="friend-avatar" style="background:${color};">${initial}<span class="dot ${f.online ? 'online' : ''}" style="width:9px;height:9px;position:absolute;bottom:-2px;right:-2px;border:2.5px solid #14141a;border-radius:50%;"></span></div>
+            <div class="friend-copy" style="min-width:0;flex:1;">
+              <strong style="display:flex;align-items:center;gap:8px;">${esc(f.name)} <span class="friend-status-tag ${status}">${statusLabel}</span></strong>
+              <span>${esc(f.uid)}</span>
+            </div>
+            <div class="friend-actions">
+              <button class="icon-btn" title="Open DM" onclick="switchSection('chat');switchChatTab('friends');openDm('${safeUid}')">💬</button>
+              <button class="icon-btn" title="Send AX" onclick="openSendModal('${safeUid}','${safeName}')">💸</button>
+              <button class="icon-btn" title="Remove friend" onclick="removeFriend('${safeUid}')" style="color:#f25c5c;">✕</button>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function removeFriend(uid) {
+      const friendsKey = getScopedKey('arenax_friends');
+      let allFriends = JSON.parse(localStorage.getItem(friendsKey) || '[]');
+      allFriends = allFriends.filter(f => f.uid !== uid);
+      localStorage.setItem(friendsKey, JSON.stringify(allFriends));
+      renderFriends();
+      toast('Friend removed');
+    }
+
+    // ===== Chat Tab Switcher =====
+    let activeChatTab = 'global';
+
+    function switchChatTab(tab) {
+      activeChatTab = tab;
+      el('tabGlobal')?.classList.toggle('active', tab === 'global');
+      el('tabFriends')?.classList.toggle('active', tab === 'friends');
+      const gPane = el('chatGlobalPane');
+      const fPane = el('chatFriendsPane');
+      if (gPane) gPane.style.display = tab === 'global' ? '' : 'none';
+      if (fPane) fPane.style.display = tab === 'friends' ? '' : 'none';
+      if (tab === 'friends') {
+        renderDmSidebar();
+      }
+    }
+
+    // ===== Friend DM Chat Engine =====
+    let dmChannel = null;
+    let dmChannelReady = false;  // true once subscribe() completes
+    let activeDmUid = null;   // UID of the open DM partner
+    const dmKnownIds = new Set();
+    const dmUnread = {};   // { uid: count }
+
+    function getDmMessages() {
+      return JSON.parse(localStorage.getItem(getScopedKey('arenax_dm_messages')) || '{}');
+    }
+    function saveDmMessages(msgs) {
+      localStorage.setItem(getScopedKey('arenax_dm_messages'), JSON.stringify(msgs));
+    }
+
+    function dmPairKey(uidA, uidB) {
+      return [uidA, uidB].sort().join('__');
+    }
+
+    function renderDmSidebar() {
+      const listEl = el('dmFriendList');
+      if (!listEl) return;
+      const allFriends = JSON.parse(localStorage.getItem(getScopedKey('arenax_friends')) || '[]').filter(f => !f.pending);
+      if (!allFriends.length) {
+        listEl.innerHTML = `<div style="padding:20px 14px;text-align:center;color:var(--muted);font-size:12px;">No accepted friends yet.<br>Add friends first!</div>`;
+        return;
+      }
+      const myUid = shortUid();
+      const allDmMessages = getDmMessages();
+      listEl.innerHTML = allFriends.map(f => {
+        const color = friendAvatarColor(f.name);
+        const key = dmPairKey(myUid, f.uid);
+        const msgs = allDmMessages[key] || [];
+        const last = msgs[msgs.length - 1];
+        const preview = last ? (last.fromUid === myUid ? 'You: ' : '') + last.text : 'No messages yet';
+        const unread = dmUnread[f.uid] || 0;
+        const safeUid = f.uid.replace(/'/g, '');
+        return `
+          <div class="dm-friend-item ${activeDmUid === f.uid ? 'active' : ''}" onclick="openDm('${safeUid}')">
+            <div class="dm-friend-avatar" style="background:${color};">${f.name.charAt(0).toUpperCase()}<span class="dot ${f.online ? 'online' : ''}" style="position:absolute;bottom:-2px;right:-2px;width:8px;height:8px;border:2px solid #14141a;border-radius:50%;background:${f.online ? '#53dc93' : '#555'};"></span></div>
+            <div style="min-width:0;flex:1;">
+              <div class="dm-friend-name">${esc(f.name)}</div>
+              <div class="dm-friend-preview">${esc(preview.slice(0, 30))}</div>
+            </div>
+            ${unread > 0 ? `<div class="dm-unread-badge">${unread}</div>` : ''}
+          </div>`;
+      }).join('');
+    }
+
+    function openDm(friendUid) {
+      const allFriends = JSON.parse(localStorage.getItem(getScopedKey('arenax_friends')) || '[]');
+      const friend = allFriends.find(f => f.uid === friendUid);
+      if (!friend) { toast('Friend not found'); return; }
+
+      // If pending, prompt to accept first
+      if (friend.pending) { toast('Accept their friend request first to start chatting'); return; }
+
+      activeDmUid = friendUid;
+      delete dmUnread[friendUid];
+      renderDmSidebar();
+
+      const main = el('dmMain');
+      if (!main) return;
+      const color = friendAvatarColor(friend.name);
+      const safeUid = friend.uid.replace(/'/g, '');
+      const safeName = friend.name.replace(/'/g, '');
+
+      main.innerHTML = `
+        <div class="dm-header">
+          <div class="dm-friend-avatar" style="background:${color};width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-weight:900;font-size:15px;color:#140d04;position:relative;flex:0 0 36px;">${friend.name.charAt(0).toUpperCase()}<span style="position:absolute;bottom:-2px;right:-2px;width:8px;height:8px;border:2px solid #14141a;border-radius:50%;background:${friend.online ? '#53dc93' : '#555'};"></span></div>
+          <div>
+            <div class="dm-header-name">${esc(friend.name)}</div>
+            <div class="dm-header-uid">${esc(friend.uid)} ${friend.online ? '· <span style="color:#53dc93;">Online</span>' : ''}</div>
+          </div>
+          <button class="icon-btn" onclick="openSendModal('${safeUid}','${safeName}')" title="Send AX" style="margin-left:auto;">💸 Send AX</button>
+        </div>
+        <div class="dm-messages" id="dmMessagesBox"></div>
+        <div class="dm-input-row">
+          <input class="input" id="dmInput" placeholder="Message ${esc(friend.name)}…" onkeydown="if(event.key==='Enter'){event.preventDefault();sendDm();}">
+          <button class="btn" onclick="sendDm()">➤</button>
+        </div>`;
+
+      renderDmMessages(friendUid);
+      initDmChannel();
+    }
+
+    function renderDmMessages(friendUid) {
+      const box = el('dmMessagesBox');
+      if (!box) return;
+      const myUid = shortUid();
+      const key = dmPairKey(myUid, friendUid);
+      const msgs = getDmMessages()[key] || [];
+
+      if (!msgs.length) {
+        box.innerHTML = `<div class="dm-empty"><div class="dm-empty-icon">👋</div><div style="font-weight:700;">Start a conversation</div><div style="font-size:12px;">Say hello!</div></div>`;
+        return;
+      }
+
+      box.innerHTML = msgs.map(m => {
+        const isMe = m.fromUid === myUid;
+        return `<div class="msg ${isMe ? 'me' : ''}" data-msg-id="${esc(m.id || '')}">
+          <b>${isMe ? 'You' : esc(m.fromName || m.from || '?')}</b>
+          <span>${esc(m.text)}</span>
+          <div style="font-size:10px;color:var(--muted);margin-top:4px;text-align:right;">${esc(m.time || '')}</div>
+        </div>`;
+      }).join('');
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function sendDm() {
+      const input = el('dmInput');
+      if (!input || !activeDmUid) return;
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+
+      const myUid = shortUid();
+      const myName = user.username || 'Guest';
+      const msgId = 'dm-' + Date.now() + '-' + Math.floor(Math.random()*9999);
+      const key = dmPairKey(myUid, activeDmUid);
+      const msgObj = {
+        id: msgId,
+        fromUid: myUid,
+        fromName: myName,
+        toUid: activeDmUid,
+        text,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        _ts: Date.now()
+      };
+
+      dmKnownIds.add(msgId);
+      const allDmMessages = getDmMessages();
+      if (!allDmMessages[key]) allDmMessages[key] = [];
+      allDmMessages[key].push(msgObj);
+      saveDmMessages(allDmMessages);
+      renderDmMessages(activeDmUid);
+
+      // Broadcast via Supabase DM channel
+      function trySendDmBroadcast(msg, retries) {
+        if (dmChannel && dmChannelReady) {
+          try {
+            dmChannel.send({ type: 'broadcast', event: 'dm_message', payload: msg });
+          } catch (e) {}
+        } else if (retries > 0) {
+          setTimeout(() => trySendDmBroadcast(msg, retries - 1), 400);
+        }
+      }
+      trySendDmBroadcast(msgObj, 5);
+    }
+
+    function initDmChannel() {
+      const sb = typeof getSupabase === 'function' ? getSupabase() : null;
+      if (!sb || dmChannel) return;
+      try {
+        dmChannel = sb.channel('arenax-dm-chat', {
+          config: { broadcast: { self: false } }
+        });
+
+        dmChannel.on('broadcast', { event: 'dm_message' }, ({ payload }) => {
+          if (!payload || !payload.text || !payload.fromUid || !payload.toUid) return;
+          const myUid = shortUid();
+          if (payload.toUid !== myUid) return;
+          const allFriends = JSON.parse(localStorage.getItem(getScopedKey('arenax_friends')) || '[]');
+          const isFromFriend = allFriends.some(f => f.uid === payload.fromUid);
+          if (!isFromFriend) return;
+
+          const msgId = String(payload.id || '');
+          if (msgId && dmKnownIds.has(msgId)) return;
+          if (msgId) dmKnownIds.add(msgId);
+
+          const key = dmPairKey(myUid, payload.fromUid);
+          const allDmMessages = getDmMessages();
+          if (!allDmMessages[key]) allDmMessages[key] = [];
+          const now = Date.now();
+          const dup = allDmMessages[key].find(m => m.fromUid === payload.fromUid && m.text === payload.text && m._ts && (now - m._ts < 8000));
+          if (dup) return;
+
+          allDmMessages[key].push({ ...payload, _ts: now });
+          saveDmMessages(allDmMessages);
+
+          if (activeDmUid === payload.fromUid) {
+            renderDmMessages(payload.fromUid);
+          } else {
+            dmUnread[payload.fromUid] = (dmUnread[payload.fromUid] || 0) + 1;
+          }
+          renderDmSidebar();
+        });
+
+        dmChannel.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            dmChannelReady = true;
+            console.log('[dm] channel ready');
+          }
+        });
+      } catch (e) {
+        console.warn('[dm] channel error', e);
+      }
+    }
+
+
     // ===== Global Realtime Online Chat =====
     let globalChatChannel = null;
     let chatMessagesList = [];
     let currentReplyTo = null;
     let chatPollTimer = null;
     let lastRenderedChatHtml = '';
+
+    // Single source of truth: all known message IDs (temp + real)
+    const knownMsgIds = new Set();
+
+    // BroadcastChannel is ONLY used for cross-tab reactions, NOT for messages sent by this tab
     const chatLocalBc = (typeof BroadcastChannel !== 'undefined') ? new BroadcastChannel('arenax_global_chat_channel') : null;
 
     if (chatLocalBc) {
       chatLocalBc.onmessage = (e) => {
-        if (e.data && e.data.type === 'chat_message' && e.data.payload) {
-          receiveChatMessage(e.data.payload);
-        } else if (e.data && e.data.type === 'chat_reaction' && e.data.payload) {
+        // Only handle reactions from other tabs, never messages (to avoid echo)
+        if (e.data && e.data.type === 'chat_reaction' && e.data.payload) {
           handleIncomingReaction(e.data.payload);
         }
       };
@@ -3157,53 +4290,70 @@
         } catch (e) {}
       }
 
-      if (!fetched.length && window.api && typeof window.api.request === 'function') {
-        try {
-          const res = await window.api.request('GET', '/chat/global');
-          if (res && res.messages && res.messages.length) {
-            fetched = res.messages.map(m => ({
-              id: String(m.id || ('api-' + m.createdAt)),
-              name: m.username || m.name || 'Player',
-              text: m.message,
-              time: m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'
-            }));
-          }
-        } catch (e) {}
-      }
-
       if (!fetched.length) return;
 
-      let updated = false;
+      let trulyNewCount = 0;
       for (const item of fetched) {
-        const match = chatMessagesList.find(x => String(x.id) === item.id || (x.name === item.name && x.text === item.text));
-        if (match) {
-          if (match.id !== item.id) {
-            match.id = item.id;
-            updated = true;
-          }
-        } else {
-          chatMessagesList.push({
-            id: item.id,
-            name: item.name,
-            text: item.text,
-            time: item.time,
-            reactions: {}
-          });
-          updated = true;
+        const itemId = String(item.id);
+        if (knownMsgIds.has(itemId)) continue;
+        knownMsgIds.add(itemId);
+
+        // Also check if there's a local temp-id message with matching text that should be reconciled
+        const tempMatch = chatMessagesList.find(m => m._tempId && m.text === item.text && m.name === item.name);
+        if (tempMatch) {
+          knownMsgIds.add(tempMatch.id);
+          tempMatch.id = itemId;
+          tempMatch._tempId = false;
+          continue;
         }
+
+        // Also reconcile messages already received via broadcast (have _ts but no _tempId, no real ID yet)
+        const broadcastMatch = chatMessagesList.find(m =>
+          !m._tempId &&
+          m.text === item.text &&
+          m.name === item.name &&
+          m._ts && (Date.now() - m._ts < 10000)
+        );
+        if (broadcastMatch) {
+          // Upgrade its ID to the real DB ID
+          knownMsgIds.add(broadcastMatch.id);
+          broadcastMatch.id = itemId;
+          continue;
+        }
+
+        chatMessagesList.push({
+          id: itemId,
+          name: item.name,
+          text: item.text,
+          time: item.time,
+          reactions: {}
+        });
+        trulyNewCount++;
       }
 
-      if (updated) {
+      if (trulyNewCount > 0) {
         if (chatMessagesList.length > 60) chatMessagesList = chatMessagesList.slice(-60);
         localStorage.setItem('arenax_chat', JSON.stringify(chatMessagesList));
+        if (userIsScrollingUp) {
+          for (let i = 0; i < trulyNewCount; i++) handleNewChatMessageArrived();
+        }
         renderChat(false);
       }
     }
 
     async function initGlobalChat() {
+      chatMessagesList = [];
+      knownMsgIds.clear();
+
       const stored = localStorage.getItem('arenax_chat');
       if (stored) {
-        try { chatMessagesList = JSON.parse(stored); } catch (e) { chatMessagesList = []; }
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            chatMessagesList = parsed;
+            chatMessagesList.forEach(m => m.id && knownMsgIds.add(String(m.id)));
+          }
+        } catch (e) { chatMessagesList = []; }
       }
 
       const sb = typeof getSupabase === 'function' ? getSupabase() : null;
@@ -3217,13 +4367,19 @@
             .limit(40);
 
           if (!error && data && data.length) {
-            chatMessagesList = data.reverse().map(m => ({
-              id: String(m.id || ('msg-' + Math.random().toString(36).slice(2, 9))),
+            const dbFetched = data.reverse().map(m => ({
+              id: String(m.id),
               name: Array.isArray(m.users) ? m.users[0]?.username : (m.users?.username || 'Player'),
               text: m.message,
               time: m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
               reactions: {}
             }));
+            // Rebuild list from DB (source of truth), preserving reactions from local cache
+            const localById = {};
+            chatMessagesList.forEach(m => { if (m.id) localById[String(m.id)] = m; });
+            chatMessagesList = dbFetched.map(m => localById[m.id] ? { ...m, reactions: localById[m.id].reactions || {} } : m);
+            knownMsgIds.clear();
+            chatMessagesList.forEach(m => knownMsgIds.add(String(m.id)));
             localStorage.setItem('arenax_chat', JSON.stringify(chatMessagesList));
           }
         } catch (e) {}
@@ -3251,27 +4407,44 @@
           const channelId = 'arenax-global-chat';
           globalChatChannel = sb.channel(channelId, {
             config: {
-              broadcast: { self: true },
+              broadcast: { self: false },
               presence: { key: (user.id || user.uid || 'anon') + '_' + Math.floor(Math.random()*1000) }
             }
           });
 
           globalChatChannel.on('broadcast', { event: 'chat_message' }, ({ payload }) => {
-            if (payload && payload.text) receiveChatMessage(payload);
+            // Only handle messages from OTHER users (self: false already handles sender)
+            if (payload && payload.text && payload.name !== (user.username || 'Guest')) {
+              receiveChatMessage(payload);
+            }
           });
 
           globalChatChannel.on('broadcast', { event: 'chat_reaction' }, ({ payload }) => {
             if (payload && payload.id && payload.emoji) handleIncomingReaction(payload);
           });
 
+          // postgres_changes may fire for own messages - deduplicate via knownMsgIds
           globalChatChannel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, (payload) => {
             if (payload.new && payload.new.message) {
-              receiveChatMessage({
-                id: String(payload.new.id),
-                name: payload.new.username || 'Player',
-                text: payload.new.message,
-                time: new Date(payload.new.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-              });
+              const dbId = String(payload.new.id);
+              const dbText = payload.new.message;
+              // Reconcile: if we already have a temp-id entry with this text, just update its ID
+              const tempMatch = chatMessagesList.find(m => m._tempId && m.text === dbText);
+              if (tempMatch) {
+                knownMsgIds.add(dbId);
+                tempMatch.id = dbId;
+                tempMatch._tempId = false;
+                localStorage.setItem('arenax_chat', JSON.stringify(chatMessagesList));
+                return;
+              }
+              if (!knownMsgIds.has(dbId)) {
+                receiveChatMessage({
+                  id: dbId,
+                  name: payload.new.username || 'Player',
+                  text: dbText,
+                  time: new Date(payload.new.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                });
+              }
             }
           });
 
@@ -3299,26 +4472,69 @@
 
       if (window.socketClient && typeof window.socketClient.on === 'function') {
         window.socketClient.on('chat_message', (data) => {
-          if (data && data.message) {
+          if (data && data.message && data.username !== (user.username || 'Guest')) {
             receiveChatMessage({ id: String(data.id || data.createdAt), name: data.username || 'Player', text: data.message });
           }
         });
       }
     }
 
-    function receiveChatMessage(msg) {
+    function receiveChatMessage(msg, forceScroll = false) {
+      if (!msg || !msg.text) return;
+      const text = String(msg.text).trim();
+      if (!text) return;
+
       if (!msg.id) msg.id = 'msg-' + Date.now() + '-' + Math.floor(Math.random()*1000);
-      const existingIdx = chatMessagesList.findIndex(m => String(m.id) === String(msg.id) || (m.name === msg.name && m.text === msg.text));
-      if (existingIdx !== -1) {
-        chatMessagesList[existingIdx] = { ...chatMessagesList[existingIdx], ...msg };
-      } else {
-        msg._ts = Date.now();
-        chatMessagesList.push(msg);
-        if (chatMessagesList.length > 60) chatMessagesList.shift();
+      const msgId = String(msg.id);
+
+      // Primary dedup: exact ID already seen
+      if (knownMsgIds.has(msgId)) return;
+
+      // Secondary dedup: same text + same sender within 8 seconds (catches broadcast vs postgres_changes double-delivery)
+      const now = Date.now();
+      const senderName = msg.name || user.username || 'Player';
+      const recentDup = chatMessagesList.find(m =>
+        m.text === text &&
+        m.name === senderName &&
+        m._ts && (now - m._ts < 8000)
+      );
+      if (recentDup) {
+        // Reconcile: if incoming has a real numeric DB ID and existing has a temp ID, upgrade it
+        const incomingIsRealId = /^\d+$/.test(msgId);
+        const existingIsTempId = recentDup.id.startsWith('local-') || recentDup.id.startsWith('msg-');
+        if (incomingIsRealId && existingIsTempId) {
+          knownMsgIds.add(msgId);
+          recentDup.id = msgId;
+          localStorage.setItem('arenax_chat', JSON.stringify(chatMessagesList));
+        }
+        return;
       }
+
+      knownMsgIds.add(msgId);
+
+      const newMsgObj = {
+        id: msgId,
+        name: senderName,
+        text: text,
+        time: msg.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        replyTo: msg.replyTo || null,
+        reactions: msg.reactions || {},
+        _ts: now
+      };
+
+      chatMessagesList.push(newMsgObj);
+      if (chatMessagesList.length > 60) chatMessagesList.shift();
       localStorage.setItem('arenax_chat', JSON.stringify(chatMessagesList));
-      renderChat(false);
+
+      if (userIsScrollingUp && !forceScroll) {
+        handleNewChatMessageArrived();
+      }
+
+      renderChat(forceScroll);
     }
+
+
+
 
     function handleIncomingReaction({ id, emoji }) {
       const msg = chatMessagesList.find(m => String(m.id) === String(id));
@@ -3369,9 +4585,56 @@
       input.focus();
     }
 
+    let userIsScrollingUp = false;
+    let isProgrammaticScroll = false;
+    let unreadChatCount = 0;
+
+    function scrollToLatestChatMessages() {
+      const box = el('chatMessages');
+      const pill = el('chatNewMessagesPill');
+      unreadChatCount = 0;
+      userIsScrollingUp = false;
+      if (pill) pill.style.display = 'none';
+      if (box) {
+        isProgrammaticScroll = true;
+        box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' });
+        setTimeout(() => { isProgrammaticScroll = false; }, 400);
+      }
+    }
+
+    function handleNewChatMessageArrived() {
+      if (userIsScrollingUp) {
+        unreadChatCount++;
+        const pill = el('chatNewMessagesPill');
+        const countText = el('chatNewMessagesCount');
+        if (countText) {
+          countText.textContent = `${unreadChatCount} new message${unreadChatCount > 1 ? 's' : ''}`;
+        }
+        if (pill) pill.style.display = 'inline-flex';
+      }
+    }
+
+    function initChatScrollListener() {
+      const box = el('chatMessages');
+      if (!box || box._hasScrollListener) return;
+      box._hasScrollListener = true;
+      box.addEventListener('scroll', () => {
+        if (isProgrammaticScroll) return;
+        const distFromBottom = box.scrollHeight - box.scrollTop - box.clientHeight;
+        userIsScrollingUp = distFromBottom > 40;
+        if (!userIsScrollingUp && unreadChatCount > 0) {
+          unreadChatCount = 0;
+          const pill = el('chatNewMessagesPill');
+          if (pill) pill.style.display = 'none';
+        }
+      }, { passive: true });
+    }
+
     function renderChat(forceScroll = false){
       const box = el('chatMessages');
       if (!box) return;
+      initChatScrollListener();
+
       if (!chatMessagesList.length) {
         const stored = localStorage.getItem('arenax_chat');
         if (stored) { try { chatMessagesList = JSON.parse(stored); } catch(e){} }
@@ -3423,20 +4686,41 @@
       }).join('');
 
       if (newHtml === lastRenderedChatHtml && box.children.length > 0) {
+        if (forceScroll) {
+          userIsScrollingUp = false;
+          isProgrammaticScroll = true;
+          box.scrollTop = box.scrollHeight;
+          setTimeout(() => { isProgrammaticScroll = false; }, 80);
+        }
         return;
       }
 
-      const wasAtBottom = (box.scrollHeight - box.scrollTop - box.clientHeight) < 80 || box.children.length === 0;
+      const previousScrollTop = box.scrollTop;
+      const isScrolledUp = (box.scrollHeight - box.scrollTop - box.clientHeight > 45) && box.children.length > 0;
 
       lastRenderedChatHtml = newHtml;
       box.innerHTML = newHtml;
 
-      if (forceScroll || wasAtBottom) {
+      isProgrammaticScroll = true;
+      if (forceScroll || !isScrolledUp) {
+        userIsScrollingUp = false;
         box.scrollTop = box.scrollHeight;
+        requestAnimationFrame(() => {
+          if (box) box.scrollTop = box.scrollHeight;
+        });
+      } else {
+        box.scrollTop = previousScrollTop;
       }
+      setTimeout(() => { isProgrammaticScroll = false; }, 80);
     }
 
+    let lastSendChatTime = 0;
+
     async function sendChat(){
+      const now = Date.now();
+      if (now - lastSendChatTime < 600) return;
+      lastSendChatTime = now;
+
       const input = el('chatInput');
       if (!input) return;
       const text = input.value.trim();
@@ -3444,54 +4728,66 @@
       input.value = '';
 
       const myName = user.username || 'Guest';
-      const msgId = 'msg-' + Date.now() + '-' + Math.floor(Math.random()*1000);
+      const msgId = 'local-' + now + '-' + Math.floor(Math.random()*9999);
+
       const msgPayload = {
         id: msgId,
         name: myName,
         text,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         replyTo: currentReplyTo ? { name: currentReplyTo.name, text: currentReplyTo.text } : null,
-        reactions: {}
+        reactions: {},
+        _tempId: true
       };
 
       cancelReply();
 
-      // 1. Render locally and post to all local tabs instantly (0ms)
-      receiveChatMessage(msgPayload);
-      chatLocalBc?.postMessage({ type: 'chat_message', payload: msgPayload });
-      renderChat(true); // forceScroll = true when sending
-      chatLocalBc?.postMessage({ type: 'chat_message', payload: msgPayload });
+      // Register this temp ID so all incoming listeners (broadcast, postgres, socket) will ignore this message
+      knownMsgIds.add(msgId);
 
-      // 2. Broadcast via Supabase Realtime to all online clients
+      // Push directly to list and render — no receiveChatMessage to avoid double-add
+      chatMessagesList.push(msgPayload);
+      if (chatMessagesList.length > 60) chatMessagesList.shift();
+      localStorage.setItem('arenax_chat', JSON.stringify(chatMessagesList));
+      renderChat(true);
+
+      // Broadcast to other users (NOT to self — self: false)
       if (globalChatChannel) {
         try {
           globalChatChannel.send({
             type: 'broadcast',
             event: 'chat_message',
-            payload: msgPayload
+            payload: { id: msgId, name: myName, text, time: msgPayload.time, replyTo: msgPayload.replyTo, reactions: {} }
           });
         } catch (e) {}
       }
 
-      // 3. Persist to Supabase database if logged in
+      // Persist to Supabase DB in background
       const sb = typeof getSupabase === 'function' ? getSupabase() : null;
       if (sb && user.id) {
-        try {
-          await sb.from('chat_messages').insert({
-            user_id: user.id,
-            game_id: 'global',
-            message: text
-          });
-        } catch (e) {}
-      }
-
-      // 4. Send over REST if active
-      if (window.api && typeof window.api.request === 'function') {
-        try { window.api.request('POST', '/chat/send', { gameId: 'global', message: text }); } catch (e) {}
+        sb.from('chat_messages').insert({
+          user_id: user.id,
+          game_id: 'global',
+          message: text
+        }).then(({ data }) => {
+          // Reconcile: update temp ID with real DB ID
+          if (data && data[0] && data[0].id) {
+            const realId = String(data[0].id);
+            const m = chatMessagesList.find(m => m.id === msgId);
+            if (m) {
+              knownMsgIds.add(realId);
+              m.id = realId;
+              m._tempId = false;
+              localStorage.setItem('arenax_chat', JSON.stringify(chatMessagesList));
+            }
+          }
+        }).catch(() => {});
       }
 
       pushActivity('💬', 'Sent a chat message');
+      setTimeout(() => { el('chatInput')?.focus(); }, 30);
     }
+    window.sendChat = sendChat;
     // UIDs are shown/copied everywhere at max 8 chars. Accounts with a long
     // backend UUID get a deterministic short form: "AX" + first 6 hex chars.
     function shortUid(){
@@ -3499,6 +4795,10 @@
       if (!raw) return 'AX840364';
       if (raw.length <= 8 && !raw.includes('-')) return raw;
       return ('AX' + raw.replace(/-/g, '').slice(0, 6)).toUpperCase();
+    }
+    function getScopedKey(key) {
+      const u = (typeof shortUid === 'function' ? shortUid() : '').toUpperCase();
+      return (u && u !== 'AX840364') ? `${key}_${u}` : key;
     }
     function copyUid(){
       navigator.clipboard?.writeText(shortUid());
@@ -3529,10 +4829,21 @@
         localStorage.removeItem('arenaX_state_v1');
         localStorage.removeItem('arenax_data');
         localStorage.removeItem('arenax_token_balance');
+        localStorage.removeItem('arenax_friends');
+        localStorage.removeItem('arenax_incoming_requests');
+        localStorage.removeItem('arenax_dm_messages');
+        localStorage.removeItem('arenax_notifications');
+        localStorage.removeItem('arenax_claimed_transfers');
+        notificationsList = [];
         if (typeof api !== 'undefined') {
           api.token = null;
           api.user = null;
         }
+        if (typeof dmChannel !== 'undefined' && dmChannel) {
+          try { getSupabase()?.removeChannel(dmChannel); } catch(e){}
+          dmChannel = null;
+        }
+        activeDmUid = null;
         showLanding();
       };
 
@@ -3657,7 +4968,7 @@
       const checkTask = airdropTasks.daily.find(t => t.id === 'd3');
       if (checkTask) { checkTask.current = 1; localStorage.setItem('arenax_axlite_tasks', JSON.stringify(airdropTasks)); }
       addAirdropFarm(5000 + airdropStreak * 1000, 'checkin');
-      toast('Checked in! +' + (5000 + airdropStreak * 1000).toLocaleString() + ' AXLITE');
+      pushNotification({ title: 'Daily Check-In Claimed', text: `+${(5000 + airdropStreak * 1000).toLocaleString()} AXLITE streak bonus added!`, type: 'reward', icon: '🎁', actionUrl: "switchSection('airdrop')", actionText: 'View Airdrop' });
       renderAirdrop();
     }
     function switchAirdropTasks(tab){
@@ -3681,7 +4992,6 @@
       const inviteTask = airdropTasks.weekly.find(t => t.id === 'w2');
       if (inviteTask) { inviteTask.current = Math.min(airdropReferrals.length, inviteTask.target); localStorage.setItem('arenax_axlite_tasks', JSON.stringify(airdropTasks)); }
       addAirdropFarm(bonus, 'referral');
-      toast(name + ' joined via your code (+ ' + bonus.toLocaleString() + ' AXLITE)');
       renderAirdrop();
     }
     function claimAirdrop(){
@@ -3827,7 +5137,7 @@
       const inc = 2400 + Math.floor(Math.random() * 3600);
       addAirdropFarm(inc, 'play');
       autoCompleteTasks();
-      if (Math.random() > 0.85) addMockReferral();
+
       renderAirdrop();
     }
 
@@ -3900,7 +5210,6 @@
       const gameGrid = el('gameGrid');
       if (gameGrid) gameGrid.innerHTML = upcomingGames.map((g, i) => `<div class="game-item" style="animation-delay:${i*60}ms"><div class="game-icon">${g.emoji}</div><div class="game-copy"><h3>${g.title}</h3><p>${g.meta}</p></div><div class="soon">🔒 Tomorrow</div></div>`).join('');
       renderActivity();
-      initGlobalChat();
       renderAirdrop();
     }
 
@@ -3915,9 +5224,26 @@
       if (section === 'marketplace') switchMarketView(marketplaceView, false);
       if (section === 'live-orders') renderLiveOrders();
       if (section === 'airdrop') renderAirdrop();
-      if (section === 'chat') initGlobalChat();
+      if (section === 'friends') { renderFriends(); updateFriendReqBadge(); }
+      if (section === 'chat') {
+        initGlobalChat();
+        setTimeout(() => {
+          const box = el('chatMessages');
+          if (box) box.scrollTop = box.scrollHeight;
+        }, 50);
+        setTimeout(() => {
+          const box = el('chatMessages');
+          if (box) box.scrollTop = box.scrollHeight;
+        }, 200);
+      }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+    function openFriendModal() {
+      if (el('friendUid')) el('friendUid').value = '';
+      if (el('friendError')) el('friendError').textContent = '';
+      el('friendModal')?.classList.add('show');
+    }
+
     function switchMarketView(view, notify=true){
       marketplaceView = view;
       el('marketSellView')?.classList.toggle('active', view === 'sell');
@@ -3943,7 +5269,7 @@
       liveOrders.unshift({ ...entry, side: type, time: Date.now() });
       render();
       if (el('section-live-orders')?.classList.contains('active')) renderLiveOrders();
-      toast((isSell ? 'Sell' : 'Buy') + ' offer created');
+      pushNotification({ title: (isSell ? 'Sell' : 'Buy') + ' Offer Created', text: `Created order for ${amount.toLocaleString()} AX at ₨${price.toFixed(1)} PKR/AX via ${payment}.`, type: 'trade', icon: '⚡', actionUrl: "switchSection('live-orders')", actionText: 'View Orders' });
     }
     function createOrder(){
       const type = el('tradeType')?.value || 'sell';
@@ -4102,7 +5428,6 @@
     }
     if (el('sidebarClose')) el('sidebarClose').addEventListener('click', closeSidebar);
     if (el('mobileOverlay')) el('mobileOverlay').addEventListener('click', closeSidebar);
-    if (el('chatInput')) el('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
 
     function hideSplash(){
       const splash = document.getElementById('arenax-splash');
@@ -4118,9 +5443,11 @@
         if (!checkAuth()) { hideSplash(); return; }
         hideSplash();
         switchSection('dashboard');
+        initNotificationSystem();
         initLiveOrders();
         initChart();
         render();
+        initFriendRequestChannel();
         setInterval(tickAirdrop, 1000);
         setInterval(simulateLiveOrders, 3500);
         // Sync real balance from Supabase users table (reflects edits made in Supabase dashboard)
