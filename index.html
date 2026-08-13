@@ -3001,19 +3001,54 @@
   </div>
 
   <div class="modal-backdrop" id="roomModal">
-    <div class="modal">
-      <h3>Create Custom Room</h3>
-      <select class="input" id="roomGame">
-        <option value="games/8ball-pool.html">🎱 8 Ball Pool</option>
-        <option value="games/Glow-hockey.html">🏒 Glow Hockey</option>
-        <option value="games/chess.html">♟️ Chess Royale</option>
-        <option value="games/checkers.html">🔴 Checkers Clash</option>
-      </select>
-      <input class="input" id="roomWager" style="margin-top:10px" type="number" min="0" placeholder="Wager AX">
-      <p>An invite code will be generated for your friend.</p>
-      <div class="modal-actions"><button class="btn secondary" onclick="closeModals()">Cancel</button><button class="btn" onclick="createRoom()">Create</button></div>
+    <div class="modal" style="max-width:440px;">
+      <h3>🏠 Custom Room</h3>
+
+      <!-- Tab switcher -->
+      <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <button id="roomTabCreate" class="btn" style="flex:1;font-size:13px;" onclick="switchRoomTab('create')">Create Room</button>
+        <button id="roomTabJoin" class="btn secondary" style="flex:1;font-size:13px;" onclick="switchRoomTab('join')">Join Room</button>
+      </div>
+
+      <!-- CREATE TAB -->
+      <div id="roomCreateTab">
+        <select class="input" id="roomGame" style="margin-bottom:10px;">
+          <option value="chess">♟️ Chess Royale</option>
+          <option value="checkers">🔴 Checkers Clash</option>
+          <option value="8ball-pool">🎱 8 Ball Pool</option>
+          <option value="glowhockey">🏒 Glow Hockey</option>
+          <option value="carrom">🪙 Carrom Clash</option>
+          <option value="ludo">🎲 Ludo Duel</option>
+        </select>
+        <input class="input" id="roomWager" style="margin-bottom:6px;" type="number" min="0" placeholder="Wager AX (0 = free)">
+        <p style="color:var(--muted);font-size:12px;margin:0 0 14px;">Your friend will use the generated code to join.</p>
+        <p id="roomCreateError" style="color:#f25c5c;font-size:12px;min-height:16px;margin:0 0 8px;"></p>
+        <div class="modal-actions">
+          <button class="btn secondary" onclick="closeModals()">Cancel</button>
+          <button class="btn" id="roomCreateBtn" onclick="window.createRoom()">Create ➤</button>
+        </div>
+      </div>
+
+      <!-- JOIN TAB -->
+      <div id="roomJoinTab" style="display:none;">
+        <input class="input" id="roomJoinCode" placeholder="Enter room code (e.g. ABC123)" style="margin-bottom:6px;text-transform:uppercase;letter-spacing:2px;">
+        <p style="color:var(--muted);font-size:12px;margin:0 0 14px;">Ask the host for their 6-character room code.</p>
+        <p id="roomJoinError" style="color:#f25c5c;font-size:12px;min-height:16px;margin:0 0 8px;"></p>
+        <div class="modal-actions">
+          <button class="btn secondary" onclick="closeModals()">Cancel</button>
+          <button class="btn" id="roomJoinBtn" onclick="window.joinRoomByCode()">Join ➤</button>
+        </div>
+      </div>
     </div>
   </div>
+
+  <!-- ROOM LOBBY OVERLAY -->
+  <div class="modal-backdrop" id="roomLobbyModal">
+    <div class="modal" style="max-width:460px;text-align:center;">
+      <div id="roomLobbyContent"></div>
+    </div>
+  </div>
+
 
   <div class="modal-backdrop" id="tradeModal">
     <div class="modal">
@@ -3431,7 +3466,7 @@
       if (el('sendAmount')) el('sendAmount').value = '';
       el('sendModal')?.classList.add('show');
     }
-    function openRoomModal(){ el('roomModal')?.classList.add('show'); }
+
     function confirmWallet(){ closeModals(); toast(walletMode === 'buy' ? 'AX purchase request submitted' : 'Withdraw request submitted'); }
     window.confirmSend = async function confirmSend() {
 
@@ -3949,7 +3984,234 @@
     }
 
 
-    function createRoom(){ pushActivity('🏠', 'Custom room created'); closeModals(); toast('Custom room created'); }
+
+    // ===== CUSTOM ROOMS =====
+    let currentRoomChannel = null;
+    let currentRoomCode = null;
+    let currentRoomRole = null;
+    let currentRoomData = null;
+
+    function switchRoomTab(tab) {
+      const isCreate = tab === 'create';
+      el('roomCreateTab').style.display = isCreate ? '' : 'none';
+      el('roomJoinTab').style.display   = isCreate ? 'none' : '';
+      el('roomTabCreate').className = isCreate ? 'btn' : 'btn secondary';
+      el('roomTabJoin').className   = isCreate ? 'btn secondary' : 'btn';
+    }
+
+    async function roomApiCall(endpoint, body) {
+      const token = localStorage.getItem('arenax_token') || (typeof api !== 'undefined' ? api.token : null)
+                 || (await (async () => { try { const sb = typeof getSupabase==='function'?getSupabase():null; if(sb){const{data:{session}}=await sb.auth.getSession();return session?.access_token||null;} return null; } catch(e){return null;} })());
+      const resp = await fetch('/api/rooms/' + endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': token ? `Bearer ${token}` : '' },
+        body: JSON.stringify(body)
+      });
+      return resp.json().catch(() => ({ success: false, error: 'Invalid server response' }));
+    }
+
+    window.createRoom = async function createRoom() {
+      const gameKey = el('roomGame')?.value;
+      const wager   = Number(el('roomWager')?.value || 0);
+      const errEl   = el('roomCreateError');
+      if (errEl) errEl.textContent = '';
+
+      if (!gameKey) { if(errEl) errEl.textContent='Select a game.'; return; }
+      if (wager < 0) { if(errEl) errEl.textContent='Wager cannot be negative.'; return; }
+      const balance = Number(user.coins ?? user.balance ?? 0);
+      if (wager > balance) { if(errEl) errEl.textContent=`Insufficient balance (${balance.toLocaleString()} AX).`; return; }
+
+      const btn = el('roomCreateBtn');
+      if (btn) { btn.disabled=true; btn.textContent='Creating…'; }
+
+      let result;
+      try { result = await roomApiCall('create', { gameKey, wager }); }
+      catch(e) { result = { success:false, error:'Network error' }; }
+
+      if (btn) { btn.disabled=false; btn.textContent='Create ➤'; }
+
+      if (!result?.success) {
+        if(errEl) errEl.textContent = result?.error || 'Failed to create room.';
+        return;
+      }
+
+      currentRoomCode = result.roomCode;
+      currentRoomRole = 'host';
+      currentRoomData = result.room;
+      closeModals();
+      openRoomLobby(result.roomCode, 'host', result.room);
+    };
+
+    window.joinRoomByCode = async function joinRoomByCode() {
+      const code  = (el('roomJoinCode')?.value || '').trim().toUpperCase();
+      const errEl = el('roomJoinError');
+      if (errEl) errEl.textContent = '';
+      if (!code || code.length < 4) { if(errEl) errEl.textContent='Enter a valid room code.'; return; }
+
+      const btn = el('roomJoinBtn');
+      if (btn) { btn.disabled=true; btn.textContent='Joining…'; }
+
+      let result;
+      try { result = await roomApiCall('join', { roomCode: code }); }
+      catch(e) { result = { success:false, error:'Network error' }; }
+
+      if (btn) { btn.disabled=false; btn.textContent='Join ➤'; }
+
+      if (!result?.success) {
+        if(errEl) errEl.textContent = result?.error || 'Failed to join room.';
+        return;
+      }
+
+      currentRoomCode = code;
+      currentRoomRole = result.role;
+      currentRoomData = result.room;
+      closeModals();
+      openRoomLobby(code, result.role, result.room);
+    };
+
+    const GAME_NAMES = { chess:'Chess Royale', checkers:'Checkers Clash', '8ball-pool':'8 Ball Pool', glowhockey:'Glow Hockey', carrom:'Carrom Clash', ludo:'Ludo Duel' };
+    const GAME_ICONS = { chess:'♟️', checkers:'🔴', '8ball-pool':'🎱', glowhockey:'🏒', carrom:'🪙', ludo:'🎲' };
+    const GAME_PATHS = { chess:'games/chess.html', checkers:'games/checkers.html', '8ball-pool':'games/8ball-pool.html', glowhockey:'games/Glow-hockey.html', carrom:'games/carrom.html', ludo:'games/ludo.html' };
+
+    function openRoomLobby(roomCode, role, room) {
+      const isHost   = role === 'host';
+      const gameKey  = room?.gameKey || '';
+      const gameName = GAME_NAMES[gameKey] || gameKey;
+      const gameIcon = GAME_ICONS[gameKey] || '🎮';
+      const wager    = room?.wager || 0;
+
+      function renderLobby(hostReady, guestReady, guestName) {
+        const myUid = shortUid();
+        const myName = user.username || 'You';
+        const hostName = isHost ? myName : (room?.creator?.username || 'Host');
+        const pName   = !isHost ? myName : (guestName || room?.playerTwo?.username || 'Waiting…');
+        const pJoined = !!room?.playerTwoId || !!guestName;
+
+        el('roomLobbyContent').innerHTML = `
+          <div style="margin-bottom:20px;">
+            <div style="font-size:32px;margin-bottom:8px;">${gameIcon}</div>
+            <div style="font-size:18px;font-weight:800;margin-bottom:4px;">${gameName}</div>
+            ${wager>0?`<div style="color:#ffe7a6;font-size:13px;font-weight:700;">🏆 Wager: ${wager.toLocaleString()} AX each</div>`:'<div style="color:var(--muted);font-size:13px;">Free game — no wager</div>'}
+          </div>
+
+          ${isHost ? `
+          <div style="background:rgba(255,231,166,0.08);border:1.5px solid rgba(255,231,166,0.25);border-radius:14px;padding:14px 18px;margin-bottom:18px;">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Room Code</div>
+            <div style="font-size:28px;font-weight:900;letter-spacing:6px;color:#ffe7a6;">${roomCode}</div>
+            <button class="btn secondary" style="margin-top:10px;font-size:12px;padding:6px 16px;" onclick="navigator.clipboard?.writeText('${roomCode}').then(()=>toast('Code copied!')).catch(()=>toast('Code: ${roomCode}'))">📋 Copy Code</button>
+          </div>` : ''}
+
+          <div style="display:flex;gap:12px;justify-content:center;margin-bottom:22px;">
+            <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:12px 20px;min-width:100px;">
+              <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Host</div>
+              <div style="font-weight:700;font-size:14px;">${esc(hostName)}</div>
+              <div style="font-size:11px;margin-top:4px;color:${hostReady?'#53dc93':'var(--muted)'};">${hostReady?'✓ Ready':'Waiting…'}</div>
+            </div>
+            <div style="display:flex;align-items:center;color:var(--muted);font-size:18px;">vs</div>
+            <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:12px 20px;min-width:100px;">
+              <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Guest</div>
+              <div style="font-weight:700;font-size:14px;">${esc(pName)}</div>
+              <div style="font-size:11px;margin-top:4px;color:${guestReady?'#53dc93':pJoined?'var(--muted)':'#555'};">${guestReady?'✓ Ready':pJoined?'Waiting…':'Not joined yet'}</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;justify-content:center;">
+            <button class="btn secondary" style="min-width:100px;" onclick="leaveRoom()">Leave</button>
+            <button class="btn" id="roomReadyBtn" style="min-width:120px;" onclick="markRoomReady()" ${(!pJoined && isHost)?'disabled':''}>
+              ${(!pJoined && isHost) ? '⏳ Waiting for player' : '✅ Ready'}
+            </button>
+          </div>
+          ${!isHost?`<p style="color:var(--muted);font-size:11px;margin-top:12px;">Room code: <b style="color:#ffe7a6;letter-spacing:2px;">${roomCode}</b></p>`:''}
+        `;
+      }
+
+      // Initial render
+      renderLobby(!!room?.creatorReady, !!room?.playerTwoReady, room?.playerTwo?.username);
+      el('roomLobbyModal').classList.add('show');
+
+      // Subscribe to room realtime channel
+      if (currentRoomChannel) { try { getSupabase()?.removeChannel(currentRoomChannel); } catch(e){} currentRoomChannel = null; }
+      const sb = typeof getSupabase === 'function' ? getSupabase() : null;
+      if (!sb) return;
+
+      let hostReady  = !!room?.creatorReady;
+      let guestReady = !!room?.playerTwoReady;
+      let guestName  = room?.playerTwo?.username || null;
+
+      currentRoomChannel = sb.channel(`room:${roomCode}`, { config: { broadcast: { self: true } } });
+
+      currentRoomChannel.on('broadcast', { event: 'game:peer_ready' }, ({ payload }) => {
+        if (payload.userId === room?.creatorId) hostReady = true;
+        else { guestReady = true; if(payload.username) guestName = payload.username; }
+        renderLobby(hostReady, guestReady, guestName);
+      });
+
+      currentRoomChannel.on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'game_rooms',
+        filter: `room_code=eq.${roomCode}`
+      }, ({ new: updated }) => {
+        if (!updated) return;
+        hostReady  = !!updated.creator_ready;
+        guestReady = !!updated.player_two_ready;
+        if (updated.player_two_id && !guestName) guestName = 'Opponent';
+        if (!isHost && !room.playerTwoId) { room.playerTwoId = updated.player_two_id; }
+        renderLobby(hostReady, guestReady, guestName);
+
+        // Both ready → game starts
+        if (updated.status === 'in_progress') {
+          launchCustomGame(roomCode, gameKey);
+        }
+      });
+
+      currentRoomChannel.subscribe((status) => {
+        console.log('[room] channel', roomCode, status);
+      });
+    }
+
+    window.markRoomReady = async function markRoomReady() {
+      const btn = el('roomReadyBtn');
+      if (btn) { btn.disabled=true; btn.textContent='⏳ Marking ready…'; }
+
+      let result;
+      try { result = await roomApiCall('ready', { roomCode: currentRoomCode }); }
+      catch(e) { result = { success:false, error:'Network error' }; }
+
+      if (!result?.success) {
+        toast('❌ ' + (result?.error || 'Could not mark ready'));
+        if (btn) { btn.disabled=false; btn.textContent='✅ Ready'; }
+        return;
+      }
+
+      if (result.started) {
+        launchCustomGame(currentRoomCode, currentRoomData?.gameKey);
+      } else {
+        if (btn) { btn.textContent='✅ Waiting for opponent…'; }
+      }
+    };
+
+    function launchCustomGame(roomCode, gameKey) {
+      el('roomLobbyModal')?.classList.remove('show');
+      if (currentRoomChannel) { try { getSupabase()?.removeChannel(currentRoomChannel); } catch(e){} currentRoomChannel = null; }
+      const gamePath = GAME_PATHS[gameKey];
+      if (!gamePath) { toast('Game not found: ' + gameKey); return; }
+      toast('🎮 Launching ' + (GAME_NAMES[gameKey]||gameKey) + '…');
+      setTimeout(() => {
+        window.location.href = gamePath + '?roomCode=' + roomCode + '&role=' + (currentRoomRole||'guest');
+      }, 600);
+    }
+
+    window.leaveRoom = async function leaveRoom() {
+      if (!currentRoomCode) { el('roomLobbyModal')?.classList.remove('show'); return; }
+      try { await roomApiCall('leave', { roomCode: currentRoomCode }); } catch(e) {}
+      el('roomLobbyModal')?.classList.remove('show');
+      if (currentRoomChannel) { try { getSupabase()?.removeChannel(currentRoomChannel); } catch(e){} currentRoomChannel = null; }
+      currentRoomCode = null;
+      toast('Left room.');
+    };
+
+    function openRoomModal(){ el('roomModal')?.classList.add('show'); switchRoomTab('create'); }
+
+
 
     function pushActivity(icon, text){
       const actKey = getScopedKey('arenax_activity');
