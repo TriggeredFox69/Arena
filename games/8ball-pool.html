@@ -244,6 +244,38 @@
                     });
                 });
             });
+            // === Auto-launch from custom room (roomCode in URL) ===
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomCodeParam = urlParams.get('roomCode');
+            const roleParam = urlParams.get('role') || 'guest';
+
+            if (roomCodeParam && window.PoolOnline) {
+                // Hide mode selection, show board directly
+                document.getElementById('modeSelection').style.display = 'none';
+                document.getElementById('gameBoard').classList.remove('hidden');
+
+                // Set player names from localStorage user
+                try {
+                    const savedUser = JSON.parse(localStorage.getItem('arenax_user') || '{}');
+                    const myName = savedUser.username || (roleParam === 'host' ? 'Host' : 'Guest');
+                    document.getElementById('player1Name').textContent = myName;
+                    document.getElementById('player2Name').textContent = 'Opponent';
+                } catch(e) {}
+
+                // Start game in online mode with the custom room code
+                setTimeout(() => {
+                    try {
+                        window.game.startGame('online', 'medium');
+                        window.onlineMode_8ballpool.joinCustomRoom(roomCodeParam, roleParam);
+                    } catch(e) {
+                        console.error('[room] Failed to auto-start online mode:', e);
+                        // Fallback: show mode selection
+                        document.getElementById('modeSelection').style.display = '';
+                        document.getElementById('gameBoard').classList.add('hidden');
+                        alert('Could not connect to room. Please try again.');
+                    }
+                }, 400);
+            }
         });
     </script>
 </body>

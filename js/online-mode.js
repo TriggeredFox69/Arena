@@ -1241,7 +1241,60 @@
       this.stopTurnTimer();
       this.reset();
     }
+
+    /**
+     * Called by game pages when launched from a custom room (roomCode in URL).
+     * Connects to the existing room via the backend + socketClient, bypassing
+     * the matchmaking/modal flow entirely.
+     */
+    async joinCustomRoom(roomCode, role) {
+      try {
+        this.roomCode = roomCode.toUpperCase();
+        this.role     = role || 'guest';
+
+        // Get auth token
+        const token = localStorage.getItem('arenax_token')
+          || (await (async () => {
+            try {
+              if (typeof getSupabase === 'function') {
+                const { data: { session } } = await getSupabase().auth.getSession();
+                return session?.access_token || null;
+              }
+            } catch(e) {}
+            return null;
+          })());
+
+        // Fetch the room from backend to get its UUID
+        const resp = await fetch('/api/rooms/join', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': token ? `Bearer ${token}` : '' },
+          body: JSON.stringify({ roomCode: this.roomCode })
+        });
+        const data = await resp.json().catch(() => null);
+
+        if (!data?.success) {
+          console.error('[OnlineMode.joinCustomRoom] join failed:', data?.error);
+          alert('Could not join room: ' + (data?.error || 'Unknown error'));
+          return;
+        }
+
+        const room = data.room;
+        this.wager  = room.wager || 0;
+        this.matchId = room.matchId || null;
+
+        // Connect via socket (same as matchmaking flow)
+        if (socketClient && socketClient.joinGame) {
+          socketClient.joinGame(this.roomCode, this.gameKey, room.id);
+        }
+
+        console.log('[OnlineMode.joinCustomRoom] joined room', this.roomCode, 'as', this.role);
+      } catch(e) {
+        console.error('[OnlineMode.joinCustomRoom] error:', e);
+        alert('Failed to connect to room. Please try again.');
+      }
+    }
   }
+
 
   // Export class
   window.OnlineMode = OnlineMode;
