@@ -1264,17 +1264,34 @@
             return null;
           })());
 
-        // Fetch the room from backend to get its UUID
-        const resp = await fetch('/api/rooms/join', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': token ? `Bearer ${token}` : '' },
-          body: JSON.stringify({ roomCode: this.roomCode })
+        // Use /sync (GET) — works for any room status (waiting, ready, in_progress).
+        // /join would fail because the room is already 'in_progress' when redirected.
+        const resp = await fetch('/api/rooms/sync?code=' + this.roomCode, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json', 'Authorization': token ? `Bearer ${token}` : '' }
         });
         const data = await resp.json().catch(() => null);
 
         if (!data?.success) {
-          console.error('[OnlineMode.joinCustomRoom] join failed:', data?.error);
-          alert('Could not join room: ' + (data?.error || 'Unknown error'));
+          console.error('[OnlineMode.joinCustomRoom] sync failed:', data?.error);
+          // Fallback: try join in case room is still waiting (host joining their own room)
+          const joinResp = await fetch('/api/rooms/join', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': token ? `Bearer ${token}` : '' },
+            body: JSON.stringify({ roomCode: this.roomCode })
+          });
+          const joinData = await joinResp.json().catch(() => null);
+          if (!joinData?.success) {
+            console.error('[OnlineMode.joinCustomRoom] join also failed:', joinData?.error);
+            alert('Could not connect to room: ' + (joinData?.error || 'Unknown error'));
+            return;
+          }
+          const room = joinData.room;
+          this.wager  = room.wager || 0;
+          this.matchId = room.matchId || null;
+          if (socketClient && socketClient.joinGame) {
+            socketClient.joinGame(this.roomCode, this.gameKey, room.id);
+          }
           return;
         }
 
@@ -1287,12 +1304,13 @@
           socketClient.joinGame(this.roomCode, this.gameKey, room.id);
         }
 
-        console.log('[OnlineMode.joinCustomRoom] joined room', this.roomCode, 'as', this.role);
+        console.log('[OnlineMode.joinCustomRoom] synced room', this.roomCode, 'as', this.role, 'status:', room.status);
       } catch(e) {
         console.error('[OnlineMode.joinCustomRoom] error:', e);
         alert('Failed to connect to room. Please try again.');
       }
     }
+
   }
 
 
